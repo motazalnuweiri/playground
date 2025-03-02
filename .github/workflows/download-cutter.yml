@@ -1,0 +1,28 @@
+name: Download Cutter
+
+on:
+  workflow_dispatch:
+  release:
+    types: [created]
+  schedule:
+    - cron: '0 0 * * MON'
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone Cutter Repository (Stable Branch)
+        run: |
+          git clone --recursive --branch stable https://github.com/rizinorg/cutter.git src
+
+      - name: Zip the src Folder
+        run: |
+          zip -r cutter-src.zip src
+
+      - name: Upload src Zip as Artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cutter-src
+          path: cutter-src.zip
