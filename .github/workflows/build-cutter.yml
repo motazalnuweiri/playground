@@ -77,4 +77,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cutter-src
-          path: src/cutter-src.zip
+          path: cutter-src.zip
