@@ -50,22 +50,31 @@ jobs:
             -DCUTTER_PACKAGE_RZ_SILHOUETTE=OFF \
             -DCUTTER_PACKAGE_JSDEC=OFF
           cmake --build build
+          
+      - name: Zip build
+        working-directory: src
+        run: |
+          zip -6 -r cutter-build.zip build
 
       - name: Upload build as Artifact
         if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
           name: cutter-build
-          path: src/build
+          path: src/cutter-build.zip
        
       - name: Clean build
         working-directory: src
         run: |
           rm -rf build
           
-      - name: Upload build as Artifact
+      - name: Zip src
+        run: |
+          zip -6 -r cutter-src.zip src
+          
+      - name: Upload src as Artifact
         if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
           name: cutter-src
-          path: src
+          path: src/cutter-src.zip
