@@ -48,7 +48,7 @@ jobs:
           cmake --build build
 
       - name: Modify CPackConfig.cmake and CPackSourceConfig.cmake
-      working-directory: src/build
+        working-directory: src/build
         run: |
           sed -i 's/set(CPACK_BINARY_DEB "OFF")/set(CPACK_BINARY_DEB "ON")/' CPackConfig.cmake
           sed -i 's/set(CPACK_BINARY_STGZ "ON")/set(CPACK_BINARY_STGZ "OFF")/' CPackConfig.cmake
