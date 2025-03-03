@@ -48,15 +48,21 @@ jobs:
           cmake --build build
 
       - name: Modify CPackConfig.cmake and CPackSourceConfig.cmake
+      working-directory: src/build
         run: |
-          sed -i 's/set(CPACK_BINARY_DEB "OFF")/set(CPACK_BINARY_DEB "ON")/' src/build/CPackConfig.cmake
-          sed -i 's/set(CPACK_BINARY_DEB "OFF")/set(CPACK_BINARY_DEB "ON")/' src/build/CPackSourceConfig.cmake
+          sed -i 's/set(CPACK_BINARY_DEB "OFF")/set(CPACK_BINARY_DEB "ON")/' CPackConfig.cmake
+          sed -i 's/set(CPACK_BINARY_STGZ "ON")/set(CPACK_BINARY_STGZ "OFF")/' CPackConfig.cmake
+          sed -i 's/set(CPACK_BINARY_TGZ "ON")/set(CPACK_BINARY_TGZ "OFF")/' CPackConfig.cmake
+          sed -i 's/set(CPACK_BINARY_TZ "ON")/set(CPACK_BINARY_TZ "OFF")/' CPackConfig.cmake
+          sed -i 's/set(CPACK_SOURCE_TBZ2 "ON")/set(CPACK_SOURCE_TBZ2 "OFF")/' CPackConfig.cmake
+          sed -i 's/set(CPACK_SOURCE_TGZ "ON")/set(CPACK_SOURCE_TGZ "OFF")/' CPackConfig.cmake
+          sed -i 's/set(CPACK_SOURCE_TXZ "ON")/set(CPACK_SOURCE_TXZ "OFF")/' CPackConfig.cmake
+          sed -i 's/set(CPACK_SOURCE_TZ "ON")/set(CPACK_SOURCE_TZ "OFF")/' CPackConfig.cmake
 
       - name: Run CPack to Generate .deb Package
         working-directory: src/build
         run: |
           cmake --build . --target package
-          cmake --build . --target package_source
 
       - name: Zip the Build Folder
         working-directory: src
