@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-ubuntu:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-24.04-arm64
 
     steps:
       - name: Clone Cutter Repository (Stable Branch)
@@ -21,22 +21,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install build-essential cmake meson pkgconf libzip-dev zlib1g-dev \
             qt5-qmake qtbase5-dev qtchooser qttools5-dev qttools5-dev-tools libqt5svg5-dev \
-            libqt5core5a libqt5widgets5 libqt5gui5 qttranslations5-l10n qml-module-qtquick2 \
-            qml-module-qtquick-controls qml-module-qtquick-controls2 qtdeclarative5-dev lsb-release -y
+            libqt5core5a libqt5widgets5 libqt5gui5 qttranslations5-l10n libgraphviz-dev lsb-release -y
           sudo apt-get install python3 python3-dev libpyside2-dev libshiboken2-dev -y
-          sudo apt-get install libgraphviz-dev libkf5syntaxhighlighting-dev -y
-
-      - name: Patch CMakeLists.txt
-        working-directory: src
-        run: |
-          sed -i '1s|^|if (POLICY CMP0148)\n    cmake_policy(SET CMP0148 OLD)\nendif()\n\n|' CMakeLists.txt
 
       - name: Build Cutter
         working-directory: src
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCUTTER_QT6=OFF \
+            -DCUTTER_QT=5 \
             -DCUTTER_USE_BUNDLED_RIZIN=ON \
+            -DCUTTER_USE_ADDITIONAL_RIZIN_PATHS=OFF \
             -DCUTTER_PACKAGE_DEPENDENCIES=ON \
             -DCUTTER_ENABLE_KSYNTAXHIGHLIGHTING=ON \
             -DCUTTER_ENABLE_GRAPHVIZ=ON \
@@ -44,37 +38,32 @@ jobs:
             -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
             -DCUTTER_ENABLE_DEPENDENCY_DOWNLOADS=ON \
             -DCUTTER_ENABLE_PACKAGING=ON \
-            -DCUTTER_PACKAGE_RZ_GHIDRA=OFF \
-            -DCUTTER_PACKAGE_RZ_LIBSWIFT=OFF \
-            -DCUTTER_PACKAGE_RZ_LIBYARA=OFF \
-            -DCUTTER_PACKAGE_RZ_SILHOUETTE=OFF \
-            -DCUTTER_PACKAGE_JSDEC=OFF
+            -DCUTTER_PACKAGE_RZ_GHIDRA=ON \
+            -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
+            -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
+            -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
+            -DCUTTER_PACKAGE_JSDEC=ON
           cmake --build build
-          
-      - name: Zip build
-        working-directory: src
-        run: |
-          zip -6 -r cutter-build.zip build
 
-      - name: Upload build as Artifact
+      - name: Modify CPackConfig.cmake and CPackSourceConfig.cmake
+        run: |
+          sed -i 's/set(CPACK_BINARY_DEB "OFF")/set(CPACK_BINARY_DEB "ON")/' src/build/CPackConfig.cmake
+          sed -i 's/set(CPACK_BINARY_DEB "OFF")/set(CPACK_BINARY_DEB "ON")/' src/build/CPackSourceConfig.cmake
+
+      - name: Run CPack to Generate .deb Package
+        working-directory: src/build
+        run: |
+          cmake --build . --target package
+          cmake --build . --target package_source
+
+      - name: Zip the Build Folder
+        run: |
+          cd src
+          zip -r cutter-build.zip build
+
+      - name: Upload Zip as Artifact
         if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
           name: cutter-build
           path: src/cutter-build.zip
-       
-      - name: Clean build
-        working-directory: src
-        run: |
-          rm -rf build
-          
-      - name: Zip src
-        run: |
-          zip -6 -r cutter-src.zip src
-          
-      - name: Upload src as Artifact
-        if: github.event_name != 'release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cutter-src
-          path: cutter-src.zip
