@@ -57,13 +57,26 @@ jobs:
           cmake --build . --target package_source
 
       - name: Zip the Build Folder
-        run: |
-          cd src
-          zip -r cutter-build.zip build
+        working-directory: src
+        run: zip -9 -r cutter-build.zip build
 
-      - name: Upload Zip as Artifact
+      - name: Upload build Zip as Artifact
         if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
           name: cutter-build
           path: src/cutter-build.zip
+          
+      - name: Clean build Folder
+        working-directory: src
+        run: rm -rf build
+  
+      - name: Zip the src Folder
+        run: zip -9 -r cutter-src.zip src
+
+      - name: Upload src Zip as Artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cutter-src
+          path: cutter-src.zip
