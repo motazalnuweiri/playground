@@ -54,7 +54,8 @@ jobs:
       - name: Build packages
         working-directory: src/build
         run: |
-          export PATH=/home/runner/work/playground/playground/src/build/Rizin-prefix/lib/:$PATH
+          export PATH=/home/runner/work/playground/playground/src/build/Rizin-prefix/lib:$PATH
+          export PATH=/usr/local/bin:$PATH
           cmake --build . --target package
 
       - name: Zip the Build Folder
