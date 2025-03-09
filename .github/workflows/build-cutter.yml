@@ -59,7 +59,12 @@ jobs:
       - name: Zip the Build Folder
         working-directory: src
         run: |
-          zip -9 -r cutter-build.zip build -x "build/_CPack_Packages/*" "build/Rizin-Bundled-prefix/*" "build/src/*"
+          zip -9 -r cutter-build.zip build -x \
+             "build/_CPack_Packages/*" \
+             "build/Rizin-Bundled-prefix/*" \
+             "build/src/*" \
+             "build/CMakeFiles/*" \
+             "build/dist/*"
 
       - name: Upload build Zip as Artifact
         if: github.event_name != 'release'
