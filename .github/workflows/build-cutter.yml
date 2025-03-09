@@ -24,7 +24,6 @@ jobs:
           sudo apt-get install python3 python3-dev libpyside2-dev libshiboken2-dev -y
           sudo apt install libgraphviz-dev -y
           sudo apt install libkf5syntaxhighlighting-dev -y
-          
 
       - name: Build Cutter
         working-directory: src
@@ -40,34 +39,27 @@ jobs:
             -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
             -DCUTTER_ENABLE_DEPENDENCY_DOWNLOADS=ON \
             -DCUTTER_ENABLE_PACKAGING=ON \
-            -DCUTTER_PACKAGE_RZ_GHIDRA=OFF \
-            -DCUTTER_PACKAGE_RZ_LIBSWIFT=OFF \
-            -DCUTTER_PACKAGE_RZ_LIBYARA=OFF \
-            -DCUTTER_PACKAGE_RZ_SILHOUETTE=OFF \
-            -DCUTTER_PACKAGE_JSDEC=OFF
+            -DCUTTER_PACKAGE_RZ_GHIDRA=ON \
+            -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
+            -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
+            -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
+            -DCUTTER_PACKAGE_JSDEC=ON
           cmake --build build
 
-      - name: Modify CPackConfig.cmake and CPackSourceConfig.cmake
-        working-directory: src/build
+      - name: Build packages
+        working-directory: src
         run: |
-          sed -i 's/set(CPACK_BINARY_DEB "OFF")/set(CPACK_BINARY_DEB "ON")/' CPackConfig.cmake
-          sed -i 's/set(CPACK_BINARY_STGZ "ON")/set(CPACK_BINARY_STGZ "OFF")/' CPackConfig.cmake
-          sed -i 's/set(CPACK_BINARY_TGZ "ON")/set(CPACK_BINARY_TGZ "OFF")/' CPackConfig.cmake
-          sed -i 's/set(CPACK_BINARY_TZ "ON")/set(CPACK_BINARY_TZ "OFF")/' CPackConfig.cmake
-          sed -i 's/set(CPACK_SOURCE_TBZ2 "ON")/set(CPACK_SOURCE_TBZ2 "OFF")/' CPackConfig.cmake
-          sed -i 's/set(CPACK_SOURCE_TGZ "ON")/set(CPACK_SOURCE_TGZ "OFF")/' CPackConfig.cmake
-          sed -i 's/set(CPACK_SOURCE_TXZ "ON")/set(CPACK_SOURCE_TXZ "OFF")/' CPackConfig.cmake
-          sed -i 's/set(CPACK_SOURCE_TZ "ON")/set(CPACK_SOURCE_TZ "OFF")/' CPackConfig.cmake
-
-      - name: Run CPack to Generate .deb Package
-        working-directory: src/build
-        run: |
-          cmake --build . --target package
+          cmake -B package -DCPACK_BINARY_DEB=ON \
+             -DCPACK_BINARY_STGZ=OFF \
+             -DCPACK_SOURCE_TBZ2=OFF \
+             -DCPACK_SOURCE_TXZ=OFF
+          cmake --build package
+             
 
       - name: Zip the Build Folder
         working-directory: src
         run: |
-          zip -9 -r cutter-build.zip build
+          zip -9 -r cutter-build.zip build -x "build/_CPack_Packages/*" "build/Rizin-Bundled-prefix/*" "build/src/*"
 
       - name: Upload build Zip as Artifact
         if: github.event_name != 'release'
@@ -75,19 +67,3 @@ jobs:
         with:
           name: cutter-build
           path: src/cutter-build.zip
-          
-      - name: Clean build Folder
-        working-directory: src
-        run: |
-          rm -rf build
-  
-      - name: Zip the src Folder
-        run: |
-          zip -9 -r cutter-src.zip src
-
-      - name: Upload src Zip as Artifact
-        if: github.event_name != 'release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cutter-src
-          path: cutter-src.zip
