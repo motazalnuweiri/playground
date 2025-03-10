@@ -1,0 +1,35 @@
+name: Build Iaito
+
+env:
+  R2V: 5.9.8
+
+jobs:
+  acr-linux:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - name: clone repository
+        run: |
+          git clone --branch 5.9.8 https://github.com/radareorg/iaito.git .
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.x
+    - name: apt dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgraphviz-dev mesa-common-dev ninja-build libqt5svg5-dev qttools5-dev qttools5-dev-tools qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools
+    - name: install r2
+      run: |
+        wget -q https://github.com/radareorg/radare2/releases/download/${{env.R2V}}/radare2_${{env.R2V}}_arm64.deb
+        wget -q https://github.com/radareorg/radare2/releases/download/${{env.R2V}}/radare2-dev_${{env.R2V}}_arm64.deb
+        sudo dpkg -i *.deb
+    - name: build iaito
+      run: |
+        ./configure --prefix=/usr
+        make -j4
+    - name: packaging
+      run: make -C dist/debian
+    - uses: actions/upload-artifact@v4
+      with:
+        name: iaito-arm64.deb
+        path: dist/debian/*/*.deb
+  
