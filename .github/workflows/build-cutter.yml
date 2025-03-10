@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Clone Cutter Repository (Stable Branch)
         run: |
-          git clone --recursive --branch stable https://github.com/rizinorg/cutter.git src
+          git clone --recursive --branch stable https://github.com/rizinorg/cutter.git cutter
 
       - name: Install dependencies (Qt5)
         run: |
@@ -27,7 +27,7 @@ jobs:
           
 
       - name: Build Cutter
-        working-directory: src
+        working-directory: cutter
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
             -DCUTTER_QT=5 \
@@ -52,14 +52,15 @@ jobs:
           cmake --build build
 
       - name: Build packages
-        working-directory: src/build
+        working-directory: cutter/build
         run: |
-          export PATH=/home/runner/work/playground/playground/src/build/Rizin-prefix/lib:$PATH
+          export PATH=/home/runner/work/playground/playground/cutter/build/Rizin-prefix/lib:$PATH
           export PATH=/usr/local/bin:$PATH
+          cp -af Rizin-prefix/. /usr/
           cmake --build . --target package
 
       - name: Zip the Build Folder
-        working-directory: src
+        working-directory: cutter
         run: |
           zip -9 -r cutter-build.zip build -x \
              "build/_CPack_Packages/*" \
@@ -73,4 +74,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cutter-build
-          path: src/cutter-build.zip
+          path: cutter/cutter-build.zip
