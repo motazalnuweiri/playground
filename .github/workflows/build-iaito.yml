@@ -2,14 +2,19 @@ name: Build Iaito
 
 env:
   R2V: 5.9.8
+  
+on:
+  workflow_dispatch:
+  release:
+    types: [created]
 
 jobs:
   acr-linux:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: clone repository
-        run: |
-          git clone --branch 5.9.8 https://github.com/radareorg/iaito.git .
+      run: |
+        git clone --branch 5.9.8 https://github.com/radareorg/iaito.git .
     - uses: actions/setup-python@v5
       with:
         python-version: 3.12.x
