@@ -2,6 +2,7 @@ name: Build ImHex
 
 env:
   BUILD_TYPE: RelWithDebInfo
+  TAG: 1.37.4
   
 on:
   workflow_dispatch:
@@ -36,7 +37,7 @@ jobs:
 
       - name: 🧰 Checkout
         run: |
-          git clone --recursive --branch master https://github.com/WerWolv/ImHex.git .
+          git clone --recursive --branch ${{ env.TAG }} https://github.com/WerWolv/ImHex.git .
 
       - name: 📜 Setup ccache
         uses: hendrikmuhs/ccache-action@v1
@@ -85,7 +86,7 @@ jobs:
 
       - name: 📦 Bundle DEB
         run: |
-          sed -i 's/Architecture:[[:space:]]*amd64/Architecture: arm64/' control.in
+          sed -i 's/Architecture:[[:space:]]*amd64/Architecture: arm64/' build/DEBIAN/control
           cp -r build/DEBIAN build/DebDir
           dpkg-deb -Zzstd --build build/DebDir
           mv build/DebDir.deb imhex-${{ env.IMHEX_VERSION }}-Ubuntu-${{ matrix.release_num }}-arm64.deb
