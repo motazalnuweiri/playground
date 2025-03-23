@@ -85,6 +85,7 @@ jobs:
 
       - name: 📦 Bundle DEB
         run: |
+          sed -i 's/Architecture:[[:space:]]*amd64/Architecture: arm64/' control.in
           cp -r build/DEBIAN build/DebDir
           dpkg-deb -Zzstd --build build/DebDir
           mv build/DebDir.deb imhex-${{ env.IMHEX_VERSION }}-Ubuntu-${{ matrix.release_num }}-arm64.deb
