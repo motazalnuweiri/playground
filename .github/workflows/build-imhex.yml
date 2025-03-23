@@ -2,7 +2,7 @@ name: Build ImHex
 
 env:
   BUILD_TYPE: RelWithDebInfo
-  TAG: 1.37.4
+  TAG: v1.37.4
   
 on:
   workflow_dispatch:
