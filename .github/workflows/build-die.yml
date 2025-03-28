@@ -1,0 +1,36 @@
+name: Build Detect It Easy
+
+env:
+  TAG: 3.10
+  
+on:
+  workflow_dispatch:
+  release:
+    types: [created]
+  
+jobs:
+
+  ubuntu-arm:
+    name: Ubuntu arm64
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        run: |
+          git clone --recursive --branch ${{ env.TAG }} https://github.com/horsicq/DIE-engine.git .
+
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install qtbase5-dev qtscript5-dev qttools5-dev-tools libqt5svg5-dev qtchooser qt5-qmake build-essential -y
+
+      - name: Build
+        run: |
+          bash -x build_dpkg.sh
+
+      - name: Upload Release as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: ubuntu24-arm64-artifact
+          path: 'release/*.deb'
