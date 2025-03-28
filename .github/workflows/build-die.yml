@@ -1,7 +1,7 @@
 name: Build Detect It Easy
 
 env:
-  TAG: 3.10
+  TAG: "3.10"
   
 on:
   workflow_dispatch:
