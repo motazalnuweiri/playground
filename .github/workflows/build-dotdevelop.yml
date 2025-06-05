@@ -1,0 +1,43 @@
+name: Build DotDevelop ARM64
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build DotDevelop on Ubuntu 24.04 ARM64
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            git build-essential autoconf automake libtool pkg-config \
+            mono-complete gtk-sharp2 \
+            libglib2.0-dev libgtk2.0-dev ca-certificates
+
+      - name: Clone DotDevelop
+        run: |
+          git clone https://github.com/dotdevelop/dotdevelop.git
+
+      - name: Configure build
+        run: |
+          cd dotdevelop
+          ./configure --prefix=${{ github.workspace }}/dotdevelop-arm64 --profile=core
+
+      - name: Compile and install
+        run: |
+          cd dotdevelop
+          make -j$(nproc)
+          make install
+
+      - name: Archive the build
+        run: |
+          tar -czf dotdevelop-arm64.tar.gz dotdevelop-arm64
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotdevelop-arm64
+          path: dotdevelop-arm64.tar.gz
