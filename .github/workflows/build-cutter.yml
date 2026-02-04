@@ -47,15 +47,15 @@ jobs:
           libwayland-dev \
           libegl1 \
           libsm6 \
-          libclang-18-dev \
-          llvm-18 \
-          qt6-base-dev \
-          qt6-tools-dev \
-          qt6-tools-dev-tools \
-          libqt6svg6-dev \
-          libqt6core5compat6-dev \
-          qt6-l10n-tools \
+          libclang-15-dev \
+          llvm-15 \
+          patchelf \
           dpkg-dev
+
+    - name: Fetch Cutter dependencies
+      run: |
+        export CUTTER_QT=6
+        scripts/fetch_deps.sh
 
     - name: Python dependencies
       run: |
@@ -76,6 +76,11 @@ jobs:
     - name: Configure & build Cutter
       shell: bash
       run: |
+        source cutter-deps/env.sh
+
+        export LD_LIBRARY_PATH="$(llvm-config --libdir):$LD_LIBRARY_PATH"
+        export LANG=C.UTF-8
+        export LC_ALL=C.UTF-8
         mkdir build
         cd build
 
