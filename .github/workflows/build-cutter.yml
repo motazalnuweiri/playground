@@ -26,41 +26,32 @@ jobs:
 
     - name: Install build dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          ninja-build \
-          cmake \
-          git \
+        sudo apt update
+        sudo apt install -y \
+          qt6-base-dev \
+          qt6-base-dev-tools \
+          qt6-tools-dev \
+          qt6-tools-dev-tools \
+          qt6-l10n-tools \
+          qt6-svg-dev \
+          qt6-multimedia-dev \
+          libqt6opengl6-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          libzstd-dev \
+          libzip-dev \
+          liblzma-dev \
+          libssl-dev \
           pkg-config \
+          cmake \
+          ninja-build \
           python3 \
           python3-pip \
-          libgraphviz-dev \
-          libpcre2-dev \
-          libfuse2 \
-          curl \
-          mesa-common-dev \
-          libgl1-mesa-dev \
-          libxkbcommon-x11-dev \
-          libxcb1-dev \
-          libxcb-*-dev \
-          libwayland-dev \
-          libegl1 \
-          libsm6 \
-          libclang-15-dev \
-          llvm-15 \
-          patchelf \
-          dpkg-dev
-
-    - name: Fetch Cutter dependencies
-      run: |
-        export CUTTER_QT=6
-        scripts/fetch_deps.sh
-
-    - name: Force native Qt host tools
-      run: |
-        echo "QT_HOST_PATH=/usr/lib/qt6" >> $GITHUB_ENV
-        echo "PATH=/usr/lib/qt6/bin:$PATH" >> $GITHUB_ENV
+          python3-setuptools \
+          python3-wheel \
+          python3-shiboken6 \
+          shiboken6 \
+          libshiboken6-dev
 
     - name: Python dependencies
       run: |
@@ -92,8 +83,6 @@ jobs:
         cmake -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DCUTTER_QT=6 \
-          -DQT_HOST_PATH=/usr/lib/qt6 \
-          -DQt6_LRELEASE_EXECUTABLE=/usr/lib/qt6/bin/lrelease \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
           -DCUTTER_ENABLE_PYTHON=ON \
           -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
