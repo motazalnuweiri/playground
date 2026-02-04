@@ -22,8 +22,8 @@ jobs:
         echo $TZ | sudo tee /etc/timezone
 
     - name: Clone cutter repository (stable branch)
-      run: |
-        git clone --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
+     run: |
+       git clone --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
 
     - name: Install build dependencies
       run: |
