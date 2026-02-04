@@ -12,6 +12,7 @@ jobs:
   build-linux-arm64:
     name: linux-arm64
     runs-on: ubuntu-24.04-arm
+    fail-fast: false
 
     steps:
     - name: Set timezone
@@ -57,6 +58,11 @@ jobs:
         export CUTTER_QT=6
         scripts/fetch_deps.sh
 
+    - name: Force native Qt host tools
+      run: |
+        echo "QT_HOST_PATH=/usr/lib/qt6" >> $GITHUB_ENV
+        echo "PATH=/usr/lib/qt6/bin:$PATH" >> $GITHUB_ENV
+
     - name: Python dependencies
       run: |
         python3 -m pip install --upgrade pip
@@ -87,6 +93,7 @@ jobs:
         cmake -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DCUTTER_QT=6 \
+          -DQT_HOST_PATH=/usr/lib/qt6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
           -DCUTTER_ENABLE_PYTHON=ON \
           -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
