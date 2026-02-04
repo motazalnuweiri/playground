@@ -1,4 +1,7 @@
-name: Build Cutter (Qt5)
+name: Build Cutter (Qt6)
+
+env:
+  TAG: "2.4.1"
 
 on:
   workflow_dispatch:
@@ -6,72 +9,152 @@ on:
     types: [created]
 
 jobs:
-  build-ubuntu:
+  build-linux-arm64:
+    name: linux-arm64
     runs-on: ubuntu-24.04-arm
+    fail-fast: false
 
     steps:
-      - name: Clone Cutter Repository (Stable Branch)
-        run: |
-          git clone --recursive --branch stable https://github.com/rizinorg/cutter.git cutter
+    - name: Set timezone
+      run: |
+        export TZ=UTC
+        sudo ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+        echo $TZ | sudo tee /etc/timezone
 
-      - name: Install dependencies (Qt5)
+    - name: Clone cutter repository (stable branch)
         run: |
-          sudo apt-get update
-          sudo apt install build-essential cmake meson pkgconf libzip-dev zlib1g-dev \
-             qt5-qmake qtbase5-dev qtchooser qttools5-dev qttools5-dev-tools libqt5svg5-dev \
-             libqt5core5a libqt5widgets5 libqt5gui5 qttranslations5-l10n qml-module-qtquick2 \
-             qml-module-qtquick-controls qml-module-qtquick-controls2 qtdeclarative5-dev lsb-release -y
-          sudo apt-get install python3 python3-dev libpyside2-dev libshiboken2-dev -y
-          sudo apt install libgraphviz-dev -y
-          sudo apt install libkf5syntaxhighlighting-dev -y
-          
+          git clone --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
 
-      - name: Build Cutter
-        working-directory: cutter
-        run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCUTTER_QT=5 \
-            -DCUTTER_USE_BUNDLED_RIZIN=ON \
-            -DCUTTER_USE_ADDITIONAL_RIZIN_PATHS=OFF \
-            -DCUTTER_PACKAGE_DEPENDENCIES=ON \
-            -DCUTTER_ENABLE_KSYNTAXHIGHLIGHTING=ON \
-            -DCUTTER_ENABLE_GRAPHVIZ=ON \
-            -DCUTTER_ENABLE_PYTHON=ON \
-            -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
-            -DCUTTER_ENABLE_DEPENDENCY_DOWNLOADS=ON \
-            -DCUTTER_ENABLE_PACKAGING=ON \
-            -DCUTTER_PACKAGE_RZ_GHIDRA=ON \
-            -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
-            -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
-            -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
-            -DCUTTER_PACKAGE_JSDEC=ON \
-            -DCPACK_BINARY_DEB=ON \
-            -DCPACK_BINARY_STGZ=OFF \
-            -DCPACK_SOURCE_TBZ2=OFF \
-            -DCPACK_SOURCE_TXZ=OFF
-          cmake --build build
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          ninja-build \
+          cmake \
+          git \
+          pkg-config \
+          python3 \
+          python3-pip \
+          libgraphviz-dev \
+          libpcre2-dev \
+          libfuse2 \
+          curl \
+          mesa-common-dev \
+          libgl1-mesa-dev \
+          libxkbcommon-x11-dev \
+          libxcb1-dev \
+          libxcb-*-dev \
+          libwayland-dev \
+          libegl1 \
+          libsm6 \
+          libclang-18-dev \
+          llvm-18 \
+          qt6-base-dev \
+          qt6-tools-dev \
+          qt6-tools-dev-tools \
+          libqt6svg6-dev \
+          libqt6core5compat6-dev \
+          qt6-l10n-tools \
+          dpkg-dev
 
-      - name: Build packages
-        working-directory: cutter/build
-        run: |
-          export PATH=/home/runner/work/playground/playground/cutter/build/Rizin-prefix/lib:$PATH
-          export PATH=/usr/local/bin:$PATH
-          cp -af Rizin-prefix/. /usr/
-          cmake --build . --target package
+    - name: Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install meson==0.61.5
 
-      - name: Zip the Build Folder
-        working-directory: cutter
-        run: |
-          zip -9 -r cutter-build.zip build -x \
-             "build/_CPack_Packages/*" \
-             "build/Rizin-Bundled-prefix/*" \
-             "build/src/*" \
-             "build/CMakeFiles/*" \
-             "build/dist/*"
+    - name: Prepare package id
+      shell: bash
+      run: |
+        if [[ "${{ startsWith(github.event.ref, 'refs/tags') }}" == "true" ]]; then
+          PACKAGE_ID="${{ github.event.ref }}"
+        else
+          PACKAGE_ID="git-$(date +%Y-%m-%d)-${{ github.sha }}"
+        fi
+        PACKAGE_ID=${PACKAGE_ID##refs/tags/}
+        echo "PACKAGE_ID=$PACKAGE_ID" >> $GITHUB_ENV
 
-      - name: Upload build Zip as Artifact
-        if: github.event_name != 'release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cutter-build
-          path: cutter/cutter-build.zip
+    - name: Configure & build Cutter
+      shell: bash
+      run: |
+        mkdir build
+        cd build
+
+        cmake -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCUTTER_QT=6 \
+          -DCUTTER_USE_BUNDLED_RIZIN=ON \
+          -DCUTTER_ENABLE_PYTHON=ON \
+          -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
+          -DCUTTER_ENABLE_GRAPHVIZ=ON \
+          -DCUTTER_ENABLE_SIGDB=ON \
+          -DCUTTER_ENABLE_PACKAGING=ON \
+          -DCUTTER_ENABLE_DEPENDENCY_DOWNLOADS=ON \
+          -DCUTTER_PACKAGE_RZ_GHIDRA=ON \
+          -DCUTTER_PACKAGE_JSDEC=ON \
+          -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
+          -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
+          -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
+          -DCMAKE_INSTALL_PREFIX=appdir/usr \
+          -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
+          ..
+
+        ninja
+        ninja install
+
+    # -------------------------
+    # AppImage (ARM64)
+    # -------------------------
+    - name: Build ARM64 AppImage
+      shell: bash
+      run: |
+        cd build
+        export CUTTER_VERSION=$(python3 ../scripts/get_version.py)
+        export VERSION=$CUTTER_VERSION
+
+        wget -c https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-aarch64.AppImage
+        chmod +x linuxdeployqt*.AppImage
+
+        ./linuxdeployqt*.AppImage \
+          appdir/usr/share/applications/*.desktop \
+          -executable=appdir/usr/bin/python3 \
+          -appimage \
+          -no-strip \
+          -exclude-libs=libnss3.so,libnssutil3.so \
+          -verbose=2
+
+        APPIMAGE_NAME="Cutter-${PACKAGE_ID}-Linux-arm64.AppImage"
+        mv Cutter-*.AppImage "$APPIMAGE_NAME"
+
+        echo "PACKAGE_NAME=$APPIMAGE_NAME" >> $GITHUB_ENV
+        echo "PACKAGE_PATH=build/$APPIMAGE_NAME" >> $GITHUB_ENV
+        echo "UPLOAD_ASSET_TYPE=application/x-executable" >> $GITHUB_ENV
+
+    # -------------------------
+    # DEB package
+    # -------------------------
+    - name: Build DEB package
+      shell: bash
+      run: |
+        cd build
+        cpack -G DEB
+        DEB_FILE=$(ls *.deb | head -n1)
+        echo "DEB_NAME=$DEB_FILE" >> $GITHUB_ENV
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: linux-arm64-artifacts
+        path: |
+          build/*.AppImage
+          build/*.deb
+
+    - name: Upload release assets
+      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.get_release.outputs.upload_url }}
+        asset_path: build/${{ env.PACKAGE_NAME }}
+        asset_name: ${{ env.PACKAGE_NAME }}
+        asset_content_type: ${{ env.UPLOAD_ASSET_TYPE }}
