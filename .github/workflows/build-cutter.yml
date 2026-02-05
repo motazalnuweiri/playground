@@ -56,7 +56,6 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         python3 -m pip install meson==0.61.5
-        python3 -m pip install PySide6
 
     - name: Prepare package id
       shell: bash
@@ -83,7 +82,7 @@ jobs:
           -DCUTTER_QT=6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
           -DCUTTER_ENABLE_PYTHON=ON \
-          -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
+          -DCUTTER_ENABLE_PYTHON_BINDINGS=OFF \
           -DCUTTER_ENABLE_GRAPHVIZ=ON \
           -DCUTTER_ENABLE_SIGDB=ON \
           -DCUTTER_ENABLE_PACKAGING=ON \
