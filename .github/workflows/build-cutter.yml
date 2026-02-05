@@ -27,9 +27,6 @@ jobs:
     - name: Install build dependencies
       run: |
         sudo apt update
-        sudo apt install -y software-properties-common
-        sudo add-apt-repository ppa:neon/qt6
-        sudo apt update
         sudo apt install -y \
           qt6-base-dev \
           qt6-base-dev-tools \
@@ -60,6 +57,7 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         python3 -m pip install meson==0.61.5
+        python3 -m pip install PySide6
 
     - name: Prepare package id
       shell: bash
@@ -86,7 +84,6 @@ jobs:
         cmake -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DCUTTER_QT=6 \
-          -DCMAKE_PREFIX_PATH=/usr/lib/qt6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
           -DCUTTER_ENABLE_PYTHON=ON \
           -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
