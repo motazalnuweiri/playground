@@ -27,6 +27,9 @@ jobs:
     - name: Install build dependencies
       run: |
         sudo apt update
+        sudo apt install -y software-properties-common
+        sudo add-apt-repository universe
+        sudo apt update
         sudo apt install -y \
           qt6-base-dev \
           qt6-base-dev-tools \
@@ -50,9 +53,6 @@ jobs:
           python3-setuptools \
           python3-wheel \
           python3-pyside6 \
-          python3-pyside6.qtcore \
-          python3-pyside6.qtgui \
-          python3-pyside6.qtwidgets \
           pyside6-tools \
           libpyside6-dev
 
