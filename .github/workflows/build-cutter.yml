@@ -70,8 +70,6 @@ jobs:
     - name: Configure & build Cutter
       shell: bash
       run: |
-        source cutter-deps/env.sh
-
         export LD_LIBRARY_PATH="$(llvm-config --libdir):$LD_LIBRARY_PATH"
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
