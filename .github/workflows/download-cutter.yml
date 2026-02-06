@@ -1,5 +1,8 @@
 name: Download Cutter
 
+env:
+  TAG: "v2.4.1"
+
 on:
   workflow_dispatch:
   release:
@@ -12,15 +15,15 @@ jobs:
     steps:
       - name: Clone Cutter Repository (Stable Branch)
         run: |
-          git clone --recursive --branch stable https://github.com/rizinorg/cutter.git src
+          git clone --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git src
 
       - name: Zip the src Folder
         run: |
-          zip -r cutter-src.zip src
+          tar -cJvf cutter-src.tar.xz src
 
       - name: Upload src Zip as Artifact
         if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
           name: cutter-src
-          path: cutter-src.zip
+          path: cutter-src.tar.xz
