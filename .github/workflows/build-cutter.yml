@@ -28,6 +28,11 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          pkg-config \
+          git \
           qt6-base-dev \
           qt6-base-dev-tools \
           qt6-tools-dev \
@@ -44,34 +49,20 @@ jobs:
           libzip-dev \
           liblzma-dev \
           libssl-dev \
-          pkg-config \
-          cmake \
-          ninja-build \
+          libgraphviz-dev \
+          libkf6syntaxhighlighting-dev \
           python3 \
           python3-pip \
           python3-setuptools \
-          python3-wheel
-
-    - name: Python dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        python3 -m pip install meson==0.61.5
-
-    - name: Prepare package id
-      shell: bash
-      run: |
-        if [[ "${{ startsWith(github.event.ref, 'refs/tags') }}" == "true" ]]; then
-          PACKAGE_ID="${{ github.event.ref }}"
-        else
-          PACKAGE_ID="git-$(date +%Y-%m-%d)-${{ github.sha }}"
-        fi
-        PACKAGE_ID=${PACKAGE_ID##refs/tags/}
-        echo "PACKAGE_ID=$PACKAGE_ID" >> $GITHUB_ENV
+          python3-wheel \
+          python3-pip \
+          meson \
+          pyside6-tools \
+          shiboken6
 
     - name: Configure & build Cutter
       shell: bash
       run: |
-        export LD_LIBRARY_PATH="$(llvm-config --libdir):$LD_LIBRARY_PATH"
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
         mkdir build
@@ -82,7 +73,7 @@ jobs:
           -DCUTTER_QT=6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
           -DCUTTER_ENABLE_PYTHON=ON \
-          -DCUTTER_ENABLE_PYTHON_BINDINGS=OFF \
+          -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
           -DCUTTER_ENABLE_GRAPHVIZ=ON \
           -DCUTTER_ENABLE_SIGDB=ON \
           -DCUTTER_ENABLE_PACKAGING=ON \
@@ -92,40 +83,14 @@ jobs:
           -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
           -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
           -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
-          -DCMAKE_INSTALL_PREFIX=appdir/usr \
-          -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
+          -DCMAKE_INSTALL_PREFIX=/usr \
+          -DCMAKE_INSTALL_LIBDIR=lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH) \
+          -DCMAKE_INSTALL_RPATH='$ORIGIN/../lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)' \
+          -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
           ..
 
         ninja
         ninja install
-
-    # -------------------------
-    # AppImage (ARM64)
-    # -------------------------
-    - name: Build ARM64 AppImage
-      shell: bash
-      run: |
-        cd build
-        export CUTTER_VERSION=$(python3 ../scripts/get_version.py)
-        export VERSION=$CUTTER_VERSION
-
-        wget -c https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-aarch64.AppImage
-        chmod +x linuxdeployqt*.AppImage
-
-        ./linuxdeployqt*.AppImage \
-          appdir/usr/share/applications/*.desktop \
-          -executable=appdir/usr/bin/python3 \
-          -appimage \
-          -no-strip \
-          -exclude-libs=libnss3.so,libnssutil3.so \
-          -verbose=2
-
-        APPIMAGE_NAME="Cutter-${PACKAGE_ID}-Linux-arm64.AppImage"
-        mv Cutter-*.AppImage "$APPIMAGE_NAME"
-
-        echo "PACKAGE_NAME=$APPIMAGE_NAME" >> $GITHUB_ENV
-        echo "PACKAGE_PATH=build/$APPIMAGE_NAME" >> $GITHUB_ENV
-        echo "UPLOAD_ASSET_TYPE=application/x-executable" >> $GITHUB_ENV
 
     # -------------------------
     # DEB package
@@ -134,7 +99,15 @@ jobs:
       shell: bash
       run: |
         cd build
-        cpack -G DEB
+
+        cpack -G DEB \
+          -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
+          -D CPACK_DEBIAN_PACKAGE_HOMEPAGE="https://cutter.re" \
+          -D CPACK_PACKAGE_DESCRIPTION_SUMMARY="GUI for rizin reverse engineering framework" \
+          -D CPACK_DEBIAN_PACKAGE_DESCRIPTION="Cutter is a Qt based GUI for reverse engineering binaries, which makes
+         use of the rizin framework. Advanced users are expected to use the
+         rizin CLI tools instead, which are much more powerful."
+        
         DEB_FILE=$(ls *.deb | head -n1)
         echo "DEB_NAME=$DEB_FILE" >> $GITHUB_ENV
 
@@ -142,7 +115,6 @@ jobs:
       with:
         name: linux-arm64-artifacts
         path: |
-          build/*.AppImage
           build/*.deb
 
     - name: Upload release assets
