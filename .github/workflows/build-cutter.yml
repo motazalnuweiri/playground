@@ -56,9 +56,7 @@ jobs:
           python3-setuptools \
           python3-wheel \
           python3-pip \
-          meson \
-          pyside6-tools \
-          shiboken6
+          meson
 
     - name: Configure & build Cutter
       shell: bash
@@ -72,8 +70,8 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCUTTER_QT=6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
-          -DCUTTER_ENABLE_PYTHON=ON \
-          -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
+          -DCUTTER_ENABLE_PYTHON=OFF \
+          -DCUTTER_ENABLE_PYTHON_BINDINGS=OFF \
           -DCUTTER_ENABLE_GRAPHVIZ=ON \
           -DCUTTER_ENABLE_SIGDB=ON \
           -DCUTTER_ENABLE_PACKAGING=ON \
