@@ -59,6 +59,8 @@ jobs:
           qtbase5-dev \
           qttools5-dev-tools \
           libqt5svg5-dev \
+          qtdeclarative5-dev \
+          qml-module-qtquick-controls \
           libkf5syntaxhighlighting-dev \
           pyside2-tools \
           libpyside2-dev \
