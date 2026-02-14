@@ -113,7 +113,7 @@ jobs:
       run: |
         cd build
 
-        cpack -G DEB \
+        sudo cpack -G DEB \
           -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
           -D CPACK_DEBIAN_PACKAGE_HOMEPAGE="https://cutter.re" \
           -D CPACK_PACKAGE_DESCRIPTION_SUMMARY="GUI for rizin reverse engineering framework" \
