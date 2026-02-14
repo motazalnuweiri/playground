@@ -95,7 +95,6 @@ jobs:
 
         cd build
         ninja
-        ninja install
 
     # -------------------------
     # DEB package
