@@ -50,7 +50,8 @@ jobs:
           libqt5svg5-dev \
           libkf5syntaxhighlighting-dev \
           pyside2-tools \
-          shiboken2
+          shiboken2 \
+          libshiboken2-dev
 
     - name: Configure & build Cutter
       shell: bash
