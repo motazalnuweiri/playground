@@ -99,6 +99,10 @@ jobs:
     - name: Build DEB package
       shell: bash
       run: |
+        APP_PREFIX=`pwd`/usr
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$APP_PREFIX/lib/rizin/plugins"
+        export PATH=$PATH:${APP_PREFIX}/bin
+
         cd build
 
         cpack -G DEB \
