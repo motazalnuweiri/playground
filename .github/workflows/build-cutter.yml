@@ -44,16 +44,13 @@ jobs:
           libfuse2 \
           meson \
           libgraphviz-dev \
-          qt5-default \
           qttools5-dev \
           qtbase5-dev \
           qttools5-dev-tools \
-          qt5-translations \
           libqt5svg5-dev \
-          libqt5core5compat-dev \
           libkf5syntaxhighlighting-dev \
-          python3-pyside2 \
-          python3-shiboken2
+          pyside2-tools \
+          shiboken2
 
     - name: Configure & build Cutter
       shell: bash
