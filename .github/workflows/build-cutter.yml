@@ -1,4 +1,4 @@
-name: Build Cutter (Qt6)
+name: Build Cutter (Qt5)
 
 env:
   TAG: "v2.4.1"
@@ -34,7 +34,7 @@ jobs:
         cd rizin
         git clean -dxff subprojects/
 
-    - name: Change file options dialog height
+    - name: Fix file options dialog height
       shell: bash
       run: |
         sed -i \
@@ -67,27 +67,24 @@ jobs:
           python3 \
           python3-dev \
           python3-pip \
-          pyside6-tools \
-          libpyside6-dev \
-          shiboken6 \
-          libshiboken6-dev
+          pyside2-tools \
+          libpyside2-dev \
+          shiboken2 \
+          libshiboken2-dev
 
-        # Install Qt6
+        # Install Qt5
         sudo apt install -y \
-          qt6-base-dev \
-          qt6-tools-dev \
-          qt6-base-dev-tools \
-          qt6-tools-dev-tools \
-          qt6-l10n-tools \
-          libqt6svg6-dev \
-          libqt6core5compat6-dev \
-          qt6-declarative-dev \
-          qml6-module-qtquick-controls
+          qttools5-dev \
+          qtbase5-dev \
+          qttools5-dev-tools \
+          libqt5svg5-dev \
+          qtdeclarative5-dev \
+          qml-module-qtquick-controls
 
         # Install cutter dependencies 
         sudo apt install -y \
           libgraphviz-dev \
-          libkf6syntaxhighlighting-dev
+          libkf5syntaxhighlighting-dev
 
     - name: Configure & build Cutter
       shell: bash
@@ -97,7 +94,7 @@ jobs:
 
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCUTTER_QT=6 \
+          -DCUTTER_QT=5 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
           -DCUTTER_ENABLE_PYTHON=ON \
           -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
