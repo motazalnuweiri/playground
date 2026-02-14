@@ -23,6 +23,17 @@ jobs:
     - name: Clone cutter repository (stable branch)
       run: |
         git clone --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
+        
+    - name: Fix git repository problems
+      shell: bash
+      run: |
+        rm -rf build
+        git submodule foreach --recursive git reset --hard
+        git submodule foreach --recursive git clean -dxff
+        rm -rf Rizin-Bundled-prefix
+
+        cd rizin
+        git clean -dxff subprojects/
 
     - name: Install build dependencies
       run: |
