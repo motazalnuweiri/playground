@@ -24,13 +24,12 @@ jobs:
       run: |
         git clone --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
         
-    - name: Fix git repository problems
+    - name: Fix git subprojects problems
       shell: bash
       run: |
         rm -rf build
         git submodule foreach --recursive git reset --hard
         git submodule foreach --recursive git clean -dxff
-        rm -rf Rizin-Bundled-prefix
 
         cd rizin
         git clean -dxff subprojects/
@@ -38,6 +37,8 @@ jobs:
     - name: Install build dependencies
       run: |
         sudo apt update
+
+        # Install build tools
         sudo apt install -y \
           build-essential \
           cmake \
@@ -45,27 +46,36 @@ jobs:
           pkg-config \
           dpkg-dev \
           git \
-          python3 \
-          python3-dev \
-          python3-pip \
           mesa-common-dev \
           libxkbcommon-x11-dev \
           curl \
           libpcre2-dev \
           libfuse2 \
-          meson \
-          libgraphviz-dev \
+          meson
+
+        # Install python
+        sudo apt install -y \
+          python3 \
+          python3-dev \
+          python3-pip \
+          pyside2-tools \
+          libpyside2-dev \
+          shiboken2 \
+          libshiboken2-dev
+
+        # Install Qt5
+        sudo apt install -y \
           qttools5-dev \
           qtbase5-dev \
           qttools5-dev-tools \
           libqt5svg5-dev \
           qtdeclarative5-dev \
-          qml-module-qtquick-controls \
-          libkf5syntaxhighlighting-dev \
-          pyside2-tools \
-          libpyside2-dev \
-          shiboken2 \
-          libshiboken2-dev
+          qml-module-qtquick-controls
+
+        # Install cutter dependencies 
+        sudo apt install -y \
+          libgraphviz-dev \
+          libkf5syntaxhighlighting-dev
 
     - name: Configure & build Cutter
       shell: bash
@@ -96,15 +106,12 @@ jobs:
 
         cd build
         ninja
+        sudo ninja install
 
     - name: Build DEB package
       shell: bash
       run: |
         cd build
-
-        APP_PREFIX=`pwd`/usr
-        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$APP_PREFIX/lib/rizin/plugins"
-        export PATH=$PATH:${APP_PREFIX}/bin
 
         cpack -G DEB \
           -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
