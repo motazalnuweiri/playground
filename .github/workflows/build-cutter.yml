@@ -91,7 +91,8 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=/usr \
           -DCMAKE_INSTALL_LIBDIR=lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH) \
           -DCMAKE_INSTALL_RPATH='$ORIGIN/../lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)' \
-          -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
+          -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
+          -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON
 
         cd build
         ninja
