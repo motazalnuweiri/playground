@@ -96,9 +96,6 @@ jobs:
         cd build
         ninja
 
-    # -------------------------
-    # DEB package
-    # -------------------------
     - name: Build DEB package
       shell: bash
       run: |
