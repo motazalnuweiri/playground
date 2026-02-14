@@ -1,4 +1,4 @@
-name: Build Cutter (Qt5)
+name: Build Cutter (Qt6)
 
 env:
   TAG: "v2.4.1"
@@ -47,6 +47,11 @@ jobs:
       run: |
         sudo apt update
 
+        # Fix pyside6 & shiboken6 not found
+        sudo apt install software-properties-common
+        sudo add-apt-repository universe
+        sudo apt update
+
         # Install build tools
         sudo apt install -y \
           build-essential \
@@ -67,24 +72,27 @@ jobs:
           python3 \
           python3-dev \
           python3-pip \
-          pyside2-tools \
-          libpyside2-dev \
-          shiboken2 \
-          libshiboken2-dev
+          pyside6-tools \
+          libpyside6-dev \
+          shiboken6 \
+          libshiboken6-dev
 
-        # Install Qt5
+        # Install Qt6
         sudo apt install -y \
-          qttools5-dev \
-          qtbase5-dev \
-          qttools5-dev-tools \
-          libqt5svg5-dev \
-          qtdeclarative5-dev \
-          qml-module-qtquick-controls
+          qt6-base-dev \
+          qt6-tools-dev \
+          qt6-base-dev-tools \
+          qt6-tools-dev-tools \
+          qt6-l10n-tools \
+          libqt6svg6-dev \
+          libqt6core5compat6-dev \
+          qt6-declarative-dev \
+          qml6-module-qtquick-controls
 
         # Install cutter dependencies 
         sudo apt install -y \
           libgraphviz-dev \
-          libkf5syntaxhighlighting-dev
+          libkf6syntaxhighlighting-dev
 
     - name: Configure & build Cutter
       shell: bash
@@ -94,7 +102,7 @@ jobs:
 
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCUTTER_QT=5 \
+          -DCUTTER_QT=6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
           -DCUTTER_ENABLE_PYTHON=ON \
           -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
