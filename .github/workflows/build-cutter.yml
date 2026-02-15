@@ -91,11 +91,19 @@ jobs:
 
         # Install cutter dependencies 
         sudo apt install -y \
-          libgraphviz-dev \
-          ksyntax-highlighting
+          libgraphviz-dev
           #libkf6syntaxhighlighting-dev
 
-    - name: Install pyside6 & shiboken6
+    - name: Build and Install KDE syntax highlighting for Qt6
+      shell: bash
+      run: |
+        git clone https://invent.kde.org/frameworks/syntax-highlighting.git
+        cd syntax-highlighting
+        cmake -B build
+        cmake --build build
+        sudo cmake --install build
+
+    - name: Build and Install pyside6 & shiboken6 for Qt6
       shell: bash
       run: |
         python3.13 -m venv ~/qt6env
