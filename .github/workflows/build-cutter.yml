@@ -100,14 +100,14 @@ jobs:
       shell: bash
       run: |
         # Clone the ECM repository and build & install it
-        git clone https://invent.kde.org/frameworks/extra-cmake-modules.git
+        git clone --depth 1 --branch v6.14.0 https://invent.kde.org/frameworks/extra-cmake-modules.git
         cd extra-cmake-modules
         cmake -B build
         cmake --build build
         sudo cmake --install build
 
         # Clone Syntax Highlighting repository and build & install it
-        git clone https://invent.kde.org/frameworks/syntax-highlighting.git
+        git clone --depth 1 --branch v6.14.0 https://invent.kde.org/frameworks/syntax-highlighting.git
         cd syntax-highlighting
         cmake -B build
         cmake --build build
