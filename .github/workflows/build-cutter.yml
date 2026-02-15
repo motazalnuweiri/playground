@@ -77,8 +77,8 @@ jobs:
           libshiboken2-dev
 
         # Install python 3.13 pip
-        curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        sudo python3.13 get-pip.py
+        #curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        #sudo python3.13 get-pip.py
 
         # Install Qt5
         sudo apt install -y \
