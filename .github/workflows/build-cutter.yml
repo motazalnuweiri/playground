@@ -79,46 +79,38 @@ jobs:
           #shiboken6 \
           #libshiboken6-dev
 
+        python3.13 -m venv ~/qt6env
+        source ~/qt6env/bin/activate
+        pip install --upgrade pip setuptools wheel
+
         # Install Qt6
-        sudo apt install -y \
-          qt6-base-dev \
-          qt6-tools-dev \
-          qt6-base-dev-tools \
-          qt6-tools-dev-tools \
-          qt6-l10n-tools \
-          libqt6svg6-dev \
-          libqt6core5compat6-dev \
-          qt6-declarative-dev \
-          qml6-module-qtquick-controls
+        #sudo apt install -y \
+          #qt6-base-dev \
+          #qt6-tools-dev \
+          #qt6-base-dev-tools \
+          #qt6-tools-dev-tools \
+          #qt6-l10n-tools \
+          #libqt6svg6-dev \
+          #libqt6core5compat6-dev \
+          #qt6-declarative-dev \
+          #qml6-module-qtquick-controls
 
         # Install cutter dependencies 
         sudo apt install -y \
           libgraphviz-dev
           #libkf6syntaxhighlighting-dev
 
-    - name: Build and Install KDE syntax highlighting for Qt6
+    - name: Install Qt6 6.9
       shell: bash
       run: |
-        # Clone the ECM repository and build & install it
-        git clone --depth 1 --branch v6.14.0 https://invent.kde.org/frameworks/extra-cmake-modules.git
-        cd extra-cmake-modules
-        cmake -B build
-        cmake --build build
-        sudo cmake --install build
-
-        # Clone Syntax Highlighting repository and build & install it
-        git clone --depth 1 --branch v6.14.0 https://invent.kde.org/frameworks/syntax-highlighting.git
-        cd syntax-highlighting
-        cmake -B build
-        cmake --build build
-        sudo cmake --install build
+        source ~/qt6env/bin/activate
+        pip install aqtinstall
+        aqt install-qt linux_arm64 desktop 6.9.0 linux_gcc_arm64
 
     - name: Build and Install pyside6 & shiboken6 for Qt6
       shell: bash
       run: |
-        python3.13 -m venv ~/qt6env
         source ~/qt6env/bin/activate
-        pip install --upgrade pip setuptools wheel
 
         git clone https://code.qt.io/pyside/pyside-setup.git
         cd pyside-setup
@@ -130,6 +122,23 @@ jobs:
             --qtpaths=/usr/bin/qtpaths6
 
         python setup.py install
+
+    - name: Build and Install KDE syntax highlighting for Qt6
+      shell: bash
+      run: |
+        # Clone the ECM repository and build & install it
+        git clone --depth 1 --branch v6.23.0 https://invent.kde.org/frameworks/extra-cmake-modules.git
+        cd extra-cmake-modules
+        cmake -B build
+        cmake --build build
+        sudo cmake --install build
+
+        # Clone Syntax Highlighting repository and build & install it
+        git clone --depth 1 --branch v6.23.0 https://invent.kde.org/frameworks/syntax-highlighting.git
+        cd syntax-highlighting
+        cmake -B build
+        cmake --build build
+        sudo cmake --install build
 
     - name: Configure & build Cutter
       shell: bash
