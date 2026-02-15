@@ -92,7 +92,7 @@ jobs:
         # Install cutter dependencies 
         sudo apt install -y \
           libgraphviz-dev \
-          ksyntax-highlighting \
+          ksyntax-highlighting
           #libkf6syntaxhighlighting-dev
 
     - name: Install pyside6 & shiboken6
