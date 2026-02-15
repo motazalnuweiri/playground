@@ -81,7 +81,9 @@ jobs:
 
         python3.13 -m venv ~/qt6env
         source ~/qt6env/bin/activate
-        pip install --upgrade pip setuptools wheel
+        pip install --upgrade pip
+        pip install "setuptools>=70.1"
+        pip install --upgrade wheel
 
         # Install Qt6
         #sudo apt install -y \
