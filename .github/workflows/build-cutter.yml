@@ -67,15 +67,18 @@ jobs:
           libfuse2 \
           meson
 
-        # Install python 3.13
+        # Install python 3.13, pyside & shiboken
         sudo apt install -y \
           python3.13 \
           python3.13-dev \
-          python3.13-pip \
           pyside2-tools \
           libpyside2-dev \
           shiboken2 \
           libshiboken2-dev
+
+        # Install python 3.13 pip
+        curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        sudo python3.13 get-pip.py
 
         # Install Qt5
         sudo apt install -y \
