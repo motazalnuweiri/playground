@@ -1,4 +1,4 @@
-name: Build Cutter (Qt5)
+name: Build Cutter (Qt6)
 
 env:
   TAG: "v2.4.1"
@@ -47,7 +47,7 @@ jobs:
       run: |
         sudo apt update
 
-        # Install python3.13
+        # Add python ppa
         sudo apt install -y software-properties-common
         sudo add-apt-repository ppa:deadsnakes/ppa
         sudo apt update
@@ -67,32 +67,50 @@ jobs:
           libfuse2 \
           meson
 
-        # Install python 3.13, pyside & shiboken
+        # Install python 3.13
         sudo apt install -y \
           python3.13 \
           python3.13-dev \
-          pyside2-tools \
-          libpyside2-dev \
-          shiboken2 \
-          libshiboken2-dev
+          python3.13-venv
+          #pyside6-tools \
+          #libpyside6-dev \
+          #shiboken6 \
+          #libshiboken6-dev
 
-        # Install python 3.13 pip
-        #curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        #sudo python3.13 get-pip.py
-
-        # Install Qt5
+        # Install Qt6
         sudo apt install -y \
-          qttools5-dev \
-          qtbase5-dev \
-          qttools5-dev-tools \
-          libqt5svg5-dev \
-          qtdeclarative5-dev \
-          qml-module-qtquick-controls
+          qt6-base-dev \
+          qt6-tools-dev \
+          qt6-base-dev-tools \
+          qt6-tools-dev-tools \
+          qt6-l10n-tools \
+          libqt6svg6-dev \
+          libqt6core5compat6-dev \
+          qt6-declarative-dev \
+          qml6-module-qtquick-controls
 
         # Install cutter dependencies 
         sudo apt install -y \
           libgraphviz-dev \
-          libkf5syntaxhighlighting-dev
+          libkf6syntaxhighlighting-dev
+
+    - name: Install pyside6 & shiboken6
+      shell: bash
+      run: |
+        python3.13 -m venv ~/qt6env
+        source ~/qt6env/bin/activate
+        pip install --upgrade pip setuptools wheel
+
+        git clone https://code.qt.io/pyside/pyside-setup.git
+        cd pyside-setup
+
+        python setup.py build \
+            --parallel=$(nproc) \
+            --cmake \
+            --standalone \
+            --qtpaths=/usr/bin/qtpaths6
+
+        python setup.py install
 
     - name: Configure & build Cutter
       shell: bash
@@ -100,11 +118,15 @@ jobs:
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
 
+        # Activate python environment
+        source ~/qt6env/bin/activate
+
         cmake -B build -G Ninja \
-          -DPython3_EXECUTABLE=/usr/bin/python3.13 \
+          -DPython3_EXECUTABLE=$(which python) \
           -DPython3_FIND_STRATEGY=LOCATION \
+          -DCMAKE_PREFIX_PATH=$VIRTUAL_ENV/lib/python3.13/site-packages/PySide6:$VIRTUAL_ENV/lib/python3.13/site-packages/Shiboken6 \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCUTTER_QT=5 \
+          -DCUTTER_QT=6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
           -DCUTTER_ENABLE_PYTHON=ON \
           -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
