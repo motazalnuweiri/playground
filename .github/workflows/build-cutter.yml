@@ -81,9 +81,7 @@ jobs:
 
         python3.13 -m venv ~/qt6env
         source ~/qt6env/bin/activate
-        pip install --upgrade pip
-        pip install "setuptools>=70.1"
-        pip install --upgrade wheel
+        python -m pip install --upgrade pip setuptools wheel
 
         # Install Qt6
         #sudo apt install -y \
@@ -108,15 +106,19 @@ jobs:
         source ~/qt6env/bin/activate
         pip install aqtinstall
         aqt install-qt linux_arm64 desktop 6.9.0 linux_gcc_arm64 -O ~/qt
+        
+        echo "QT_DIR=$HOME/qt/6.9.0/linux_gcc_arm64" >> $GITHUB_ENV
 
     - name: Build and install pyside6 & shiboken6 for Qt6
       shell: bash
       run: |
-        export PATH=$HOME/qt/6.9.0/linux_gcc_arm64/bin:$PATH
+        export PATH=$QT_DIR/bin:$PATH
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
         git clone https://code.qt.io/pyside/pyside-setup.git
         cd pyside-setup
+        git checkout v6.9.0
 
         python setup.py build
         python setup.py install
@@ -124,7 +126,8 @@ jobs:
     - name: Build and install KDE syntax highlighting for Qt6
       shell: bash
       run: |
-        export PATH=$HOME/qt/6.9.0/linux_gcc_arm64/bin:$PATH
+        export PATH=$QT_DIR/bin:$PATH
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
         # Clone the ECM repository and build & install it
@@ -144,7 +147,8 @@ jobs:
     - name: Configure & build Cutter
       shell: bash
       run: |
-        export PATH=$HOME/qt/6.9.0/linux_gcc_arm64/bin:$PATH
+        export PATH=$QT_DIR/bin:$PATH
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
         export LANG=C.UTF-8
@@ -181,6 +185,9 @@ jobs:
     - name: Build DEB package
       shell: bash
       run: |
+        export PATH=$QT_DIR/bin:$PATH
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
+        source ~/qt6env/bin/activate
         cd build
 
         sudo cpack -G DEB \
