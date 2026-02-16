@@ -109,19 +109,19 @@ jobs:
         
         echo "QT_DIR=$HOME/qt/6.9.0/linux_gcc_arm64" >> $GITHUB_ENV
 
-    - name: Build and install pyside6 & shiboken6 for Qt6
-      shell: bash
-      run: |
-        export PATH=$QT_DIR/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
-        source ~/qt6env/bin/activate
+    #- name: Build and install pyside6 & shiboken6 for Qt6
+      #shell: bash
+      #run: |
+        #export PATH=$QT_DIR/bin:$PATH
+        #export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
+        #source ~/qt6env/bin/activate
 
-        git clone https://code.qt.io/pyside/pyside-setup.git
-        cd pyside-setup
-        git checkout v6.9.0
+        #git clone https://code.qt.io/pyside/pyside-setup.git
+        #cd pyside-setup
+        #git checkout v6.9.0
 
-        python setup.py build
-        python setup.py install
+        #python setup.py build
+        #python setup.py install
 
     - name: Build and install KDE syntax highlighting for Qt6
       shell: bash
@@ -161,8 +161,8 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCUTTER_QT=6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
-          -DCUTTER_ENABLE_PYTHON=ON \
-          -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
+          -DCUTTER_ENABLE_PYTHON=OFF \
+          -DCUTTER_ENABLE_PYTHON_BINDINGS=OFF \
           -DCUTTER_ENABLE_GRAPHVIZ=ON \
           -DCUTTER_ENABLE_SIGDB=ON \
           -DCUTTER_ENABLE_PACKAGING=ON \
