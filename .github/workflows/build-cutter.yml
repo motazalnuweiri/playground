@@ -132,8 +132,8 @@ jobs:
 
         echo "ls -a"
         ls -a
-        echo "cd ~/qt"
-        cd ~/qt
+        echo "cd ~/qt/6.9.0"
+        cd ~/qt/6.9.0
         echo "ls -a"
         ls -a
         echo $QT_DIR
