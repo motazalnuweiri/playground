@@ -126,29 +126,29 @@ jobs:
     - name: Build and install KDE syntax highlighting for Qt6
       shell: bash
       run: |
-        export PATH=~/qt/6.9.0/linux_gcc_arm64/bin:$PATH
-        export LD_LIBRARY_PATH=~/qt/6.9.0/linux_gcc_arm64/lib:$LD_LIBRARY_PATH
+        export PATH=$QT_DIR/bin:$PATH
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
         # Clone the ECM repository and build & install it
         git clone --depth 1 --branch v6.23.0 https://invent.kde.org/frameworks/extra-cmake-modules.git
         cd extra-cmake-modules
-        cmake -B build
+        cmake -B build -DCMAKE_PREFIX_PATH=$QT_DIR
         cmake --build build
         sudo cmake --install build
 
         # Clone Syntax Highlighting repository and build & install it
         git clone --depth 1 --branch v6.23.0 https://invent.kde.org/frameworks/syntax-highlighting.git
         cd syntax-highlighting
-        cmake -B build
+        cmake -B build -DCMAKE_PREFIX_PATH=$QT_DIR
         cmake --build build
         sudo cmake --install build
 
     - name: Configure & build Cutter
       shell: bash
       run: |
-        export PATH=~/qt/6.9.0/linux_gcc_arm64/bin:$PATH
-        export LD_LIBRARY_PATH=~/qt/6.9.0/linux_gcc_arm64/lib:$LD_LIBRARY_PATH
+        export PATH=$QT_DIR/bin:$PATH
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
         export LANG=C.UTF-8
@@ -157,7 +157,7 @@ jobs:
         cmake -B build -G Ninja \
           -DPython3_EXECUTABLE=$(which python) \
           -DPython3_FIND_STRATEGY=LOCATION \
-          -DCMAKE_PREFIX_PATH=$VIRTUAL_ENV/lib/python3.13/site-packages/PySide6:$VIRTUAL_ENV/lib/python3.13/site-packages/Shiboken6 \
+          -DCMAKE_PREFIX_PATH=$QT_DIR:$VIRTUAL_ENV/lib/python3.13/site-packages/PySide6:$VIRTUAL_ENV/lib/python3.13/site-packages/Shiboken6 \
           -DCMAKE_BUILD_TYPE=Release \
           -DCUTTER_QT=6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
@@ -185,8 +185,8 @@ jobs:
     - name: Build DEB package
       shell: bash
       run: |
-        export PATH=~/qt/6.9.0/linux_gcc_arm64/bin:$PATH
-        export LD_LIBRARY_PATH=~/qt/6.9.0/linux_gcc_arm64/lib:$LD_LIBRARY_PATH
+        export PATH=$QT_DIR/bin:$PATH
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
         cd build
 
