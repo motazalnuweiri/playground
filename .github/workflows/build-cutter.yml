@@ -130,8 +130,11 @@ jobs:
         export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
+        echo "ls -a"
         ls -a
+        echo "cd ~/qt"
         cd ~/qt
+        echo "ls -a"
         ls -a
         echo $QT_DIR
         qtpaths --version
