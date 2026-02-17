@@ -130,18 +130,20 @@ jobs:
         export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
+        qtpaths --version
+
         # Clone the ECM repository and build & install it
         git clone --depth 1 --branch v6.23.0 https://invent.kde.org/frameworks/extra-cmake-modules.git
         cd extra-cmake-modules
         cmake -B build -DCMAKE_PREFIX_PATH=$QT_DIR
-        cmake --build build
+        cmake --build build --trace-expand
         sudo cmake --install build
 
         # Clone Syntax Highlighting repository and build & install it
         git clone --depth 1 --branch v6.23.0 https://invent.kde.org/frameworks/syntax-highlighting.git
         cd syntax-highlighting
         cmake -B build -DCMAKE_PREFIX_PATH=$QT_DIR
-        cmake --build build
+        cmake --build build --trace-expand
         sudo cmake --install build
 
     - name: Configure & build Cutter
