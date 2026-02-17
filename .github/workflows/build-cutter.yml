@@ -130,6 +130,7 @@ jobs:
         export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
+        echo $QT_DIR
         qtpaths --version
 
         # Clone the ECM repository and build & install it
