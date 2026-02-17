@@ -107,7 +107,7 @@ jobs:
         pip install aqtinstall
         aqt install-qt linux_arm64 desktop 6.9.0 linux_gcc_arm64 -O ~/qt
         
-        echo "QT_DIR=~/qt/6.9.0/linux_gcc_arm64" >> $GITHUB_ENV
+        echo "QT_DIR=~/qt/6.9.0/gcc_arm64" >> $GITHUB_ENV
 
     #- name: Build and install pyside6 & shiboken6 for Qt6
       #shell: bash
@@ -129,15 +129,6 @@ jobs:
         export PATH=$QT_DIR/bin:$PATH
         export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
-
-        echo "ls -a"
-        ls -a
-        echo "cd ~/qt/6.9.0"
-        cd ~/qt/6.9.0
-        echo "ls -a"
-        ls -a
-        echo $QT_DIR
-        qtpaths --version
 
         # Clone the ECM repository and build & install it
         git clone --depth 1 --branch v6.23.0 https://invent.kde.org/frameworks/extra-cmake-modules.git
