@@ -107,7 +107,7 @@ jobs:
         pip install aqtinstall
         aqt install-qt linux_arm64 desktop 6.9.0 linux_gcc_arm64 -O ~/qt
         
-        echo "QT_DIR=$HOME/qt/6.9.0/linux_gcc_arm64" >> $GITHUB_ENV
+        echo "QT_DIR=~/qt/6.9.0/linux_gcc_arm64" >> $GITHUB_ENV
 
     #- name: Build and install pyside6 & shiboken6 for Qt6
       #shell: bash
@@ -126,8 +126,8 @@ jobs:
     - name: Build and install KDE syntax highlighting for Qt6
       shell: bash
       run: |
-        export PATH=$QT_DIR/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
+        export PATH=~/qt/6.9.0/linux_gcc_arm64/bin:$PATH
+        export LD_LIBRARY_PATH=~/qt/6.9.0/linux_gcc_arm64/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
         # Clone the ECM repository and build & install it
@@ -147,8 +147,8 @@ jobs:
     - name: Configure & build Cutter
       shell: bash
       run: |
-        export PATH=$QT_DIR/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
+        export PATH=~/qt/6.9.0/linux_gcc_arm64/bin:$PATH
+        export LD_LIBRARY_PATH=~/qt/6.9.0/linux_gcc_arm64/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
 
         export LANG=C.UTF-8
@@ -185,8 +185,8 @@ jobs:
     - name: Build DEB package
       shell: bash
       run: |
-        export PATH=$QT_DIR/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
+        export PATH=~/qt/6.9.0/linux_gcc_arm64/bin:$PATH
+        export LD_LIBRARY_PATH=~/qt/6.9.0/linux_gcc_arm64/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
         cd build
 
