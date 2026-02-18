@@ -22,7 +22,7 @@ jobs:
 
     - name: Clone cutter repository (stable branch)
       run: |
-        git clone --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
+        git clone --depth 1 --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
         
     - name: Fix git subprojects problems
       shell: bash
@@ -164,6 +164,8 @@ jobs:
 
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
+        export Qt6_DIR=$QT_DIR
+        export CMAKE_PREFIX_PATH=$QT_DIR
 
         cmake -B build -G Ninja \
           -DPython3_EXECUTABLE=$(which python) \
@@ -200,6 +202,11 @@ jobs:
         export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         source ~/qt6env/bin/activate
         cd build
+
+        export LANG=C.UTF-8
+        export LC_ALL=C.UTF-8
+        export Qt6_DIR=$QT_DIR
+        export CMAKE_PREFIX_PATH=$QT_DIR
 
         sudo cpack -G DEB \
           -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
