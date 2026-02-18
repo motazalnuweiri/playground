@@ -115,7 +115,8 @@ jobs:
       run: |
         source ~/qt6env/bin/activate
         pip install aqtinstall
-        aqt install-qt linux_arm64 desktop 6.9.0 linux_gcc_arm64 -O ~/qt
+        aqt install-qt linux_arm64 desktop 6.9.0 linux_gcc_arm64 \
+          -O ~/qt -m qt5compat
         
         echo "QT_DIR=~/qt/6.9.0/gcc_arm64" >> $GITHUB_ENV
 
