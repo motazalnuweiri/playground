@@ -193,7 +193,7 @@ jobs:
 
         cd build
         ninja
-        sudo ninja install
+        sudo -E ninja install
 
     - name: Build DEB package
       shell: bash
@@ -208,7 +208,7 @@ jobs:
         export Qt6_DIR=$QT_DIR
         export CMAKE_PREFIX_PATH=$QT_DIR
 
-        sudo cpack -G DEB \
+        sudo -E cpack -G DEB \
           -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
           -D CPACK_DEBIAN_PACKAGE_HOMEPAGE="https://cutter.re" \
           -D CPACK_PACKAGE_DESCRIPTION_SUMMARY="GUI for rizin reverse engineering framework" \
