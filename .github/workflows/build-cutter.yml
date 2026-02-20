@@ -160,13 +160,13 @@ jobs:
       run: |
         export PATH=$QT_DIR/bin:$PATH
         export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
-        source ~/qt6env/bin/activate
-
-        export LANG=C.UTF-8
-        export LC_ALL=C.UTF-8
         export Qt6_DIR=$QT_DIR
         export CMAKE_PREFIX_PATH=$QT_DIR
+        export LANG=C.UTF-8
+        export LC_ALL=C.UTF-8
 
+        source ~/qt6env/bin/activate
+        
         cmake -B build -G Ninja \
           -DPython3_EXECUTABLE=$(which python) \
           -DPython3_FIND_STRATEGY=LOCATION \
@@ -185,7 +185,7 @@ jobs:
           -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
           -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
           -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
-          -DCMAKE_INSTALL_PREFIX=/usr \
+          -DCMAKE_INSTALL_PREFIX=appdir/usr \
           -DCMAKE_INSTALL_LIBDIR=lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH) \
           -DCMAKE_INSTALL_RPATH='$ORIGIN/../lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)' \
           -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
@@ -193,22 +193,24 @@ jobs:
 
         cd build
         ninja
-        sudo -E ninja install
+        ninja install
 
     - name: Build DEB package
       shell: bash
       run: |
-        export PATH=$QT_DIR/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
-        source ~/qt6env/bin/activate
-        cd build
-
-        export LANG=C.UTF-8
-        export LC_ALL=C.UTF-8
+        APP_PREFIX=`pwd`/appdir/usr
+        export PATH=$QT_DIR/bin:${APP_PREFIX}/bin:$PATH
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$APP_PREFIX/lib/rizin/plugins:$LD_LIBRARY_PATH
         export Qt6_DIR=$QT_DIR
         export CMAKE_PREFIX_PATH=$QT_DIR
+        export LANG=C.UTF-8
+        export LC_ALL=C.UTF-8
+        
+        source ~/qt6env/bin/activate
+        
+        cd build
 
-        sudo -E cpack -G DEB \
+        sudo cpack -G DEB \
           -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
           -D CPACK_DEBIAN_PACKAGE_HOMEPAGE="https://cutter.re" \
           -D CPACK_PACKAGE_DESCRIPTION_SUMMARY="GUI for rizin reverse engineering framework" \
