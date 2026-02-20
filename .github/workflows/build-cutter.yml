@@ -193,6 +193,7 @@ jobs:
 
         cd build
         ninja
+        ninja install
 
     - name: Build DEB package
       shell: bash
