@@ -158,12 +158,10 @@ jobs:
     - name: Configure & build Cutter
       shell: bash
       run: |
-        APP_PREFIX=`pwd`/appdir/usr
-        export PATH=$QT_DIR/bin:${APP_PREFIX}/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH 
-        export PKG_CONFIG_PATH=${APP_PREFIX}/lib/pkgconfig:$PKG_CONFIG_PATH 
+        export PATH=$QT_DIR/bin:$PATH
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH 
         export Qt6_DIR=$QT_DIR
-        export CMAKE_PREFIX_PATH=$QT_DIR:${APP_PREFIX}/lib/cmake
+        export CMAKE_PREFIX_PATH=$QT_DIR
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
 
@@ -195,7 +193,6 @@ jobs:
 
         cd build
         ninja
-        ninja install
 
     - name: Build DEB package
       shell: bash
