@@ -186,8 +186,6 @@ jobs:
           -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
           -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
           -DCMAKE_INSTALL_PREFIX=appdir/usr \
-          -DCMAKE_INSTALL_LIBDIR=lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH) \
-          -DCMAKE_INSTALL_RPATH='$ORIGIN/../lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)' \
           -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
           -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON
 
@@ -201,9 +199,8 @@ jobs:
         APP_PREFIX=`pwd`/appdir/usr
         export PATH=$QT_DIR/bin:${APP_PREFIX}/bin:$PATH
         export LD_LIBRARY_PATH=$QT_DIR/lib:${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH 
-        export PKG_CONFIG_PATH=${APP_PREFIX}/lib/pkgconfig:$PKG_CONFIG_PATH 
         export Qt6_DIR=$QT_DIR
-        export CMAKE_PREFIX_PATH=$QT_DIR:${APP_PREFIX}/lib/cmake
+        export CMAKE_PREFIX_PATH=$QT_DIR
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
         
