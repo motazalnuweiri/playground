@@ -200,9 +200,11 @@ jobs:
         export PATH=$QT_DIR/bin:${APP_PREFIX}/bin:$PATH
         export LD_LIBRARY_PATH=$QT_DIR/lib:${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH 
         export Qt6_DIR=$QT_DIR
-        export CMAKE_PREFIX_PATH=$QT_DIR
+        export CMAKE_PREFIX_PATH=$QT_DIR:$QT_DIR/lib/cmake
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
+        export DPkg_Shlibdeps_ARGS="--ignore-missing-info"
+        export CMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
         
         source ~/qt6env/bin/activate
         
