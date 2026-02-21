@@ -159,7 +159,7 @@ jobs:
       shell: bash
       run: |
         export PATH=$QT_DIR/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH 
+        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
         export Qt6_DIR=$QT_DIR
         export CMAKE_PREFIX_PATH=$QT_DIR
         export LANG=C.UTF-8
@@ -197,16 +197,23 @@ jobs:
       shell: bash
       run: |
         APP_PREFIX=`pwd`/appdir/usr
-        export PATH=$QT_DIR/bin:${APP_PREFIX}/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH 
-        export Qt6_DIR=$QT_DIR
-        export CMAKE_PREFIX_PATH=$QT_DIR:$QT_DIR/lib/cmake
+        export PATH=${APP_PREFIX}/bin:$PATH
+        export LD_LIBRARY_PATH=${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
-        export DPkg_Shlibdeps_ARGS="--ignore-missing-info"
-        export CMAKE_INSTALL_RPATH_USE_LINK_PATH=ON
-        
+
         source ~/qt6env/bin/activate
+
+        # Install system-wide Qt6 to fix clack error
+        sudo apt update
+        sudo apt install -y \
+          qt6-base-dev \
+          qt6-base-dev-tools \
+          qt6-declarative-dev \
+          qt6-declarative-dev-tools \
+          qt6-tools-dev \
+          qt6-tools-dev-tools \
+          libqt6core5compat6
         
         cd build
 
