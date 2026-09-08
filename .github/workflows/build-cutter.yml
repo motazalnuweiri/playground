@@ -1,7 +1,7 @@
 name: Build Cutter (Qt6)
 
 env:
-  TAG: "v2.4.1"
+  TAG: "v2.5.0"
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
 jobs:
   build-linux-arm64:
     name: linux-arm64
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
 
     steps:
     - name: Set timezone
@@ -49,7 +49,6 @@ jobs:
 
         # Add python ppa
         sudo apt install -y software-properties-common
-        sudo add-apt-repository ppa:deadsnakes/ppa
         sudo apt update
 
         # Install build tools
@@ -74,31 +73,30 @@ jobs:
           python3.13 \
           python3.13-dev \
           python3.13-venv
-          #pyside6-tools \
-          #libpyside6-dev \
-          #shiboken6 \
-          #libshiboken6-dev
-
-        python3.13 -m venv ~/qt6env
-        source ~/qt6env/bin/activate
-        python -m pip install --upgrade pip setuptools wheel
+          pyside6-tools \
+          libpyside6-dev \
+          shiboken6 \
+          libshiboken6-dev
 
         # Install Qt6
         #sudo apt install -y \
-          #qt6-base-dev \
-          #qt6-tools-dev \
-          #qt6-base-dev-tools \
-          #qt6-tools-dev-tools \
-          #qt6-l10n-tools \
-          #libqt6svg6-dev \
-          #libqt6core5compat6-dev \
-          #qt6-declarative-dev \
-          #qml6-module-qtquick-controls
+          qt6-base-dev \
+          qt6-tools-dev \
+          qt6-base-dev-tools \
+          qt6-tools-dev-tools \
+          qt6-l10n-tools \
+          libqt6svg6-dev \
+          libqt6core5compat6-dev \
+          qt6-declarative-dev \
+          qml6-module-qtquick-controls \
+          qt6-declarative-dev \
+          qt6-declarative-dev-tools \
+          libqt6core5compat6
 
         # Install cutter dependencies 
         sudo apt install -y \
           libgraphviz-dev
-          #libkf6syntaxhighlighting-dev
+          libkf6syntaxhighlighting-dev
 
         sudo apt install -y \
           libegl1-mesa-dev \
@@ -110,73 +108,20 @@ jobs:
         
          sudo apt install libwayland-dev
 
-    - name: Install Qt6 6.9
-      shell: bash
-      run: |
-        source ~/qt6env/bin/activate
-        pip install aqtinstall
-        aqt install-qt linux_arm64 desktop 6.9.0 linux_gcc_arm64 \
-          -O ~/qt -m qt5compat
-        
-        echo "QT_DIR=~/qt/6.9.0/gcc_arm64" >> $GITHUB_ENV
-
-    #- name: Build and install pyside6 & shiboken6 for Qt6
-      #shell: bash
-      #run: |
-        #export PATH=$QT_DIR/bin:$PATH
-        #export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
-        #source ~/qt6env/bin/activate
-
-        #git clone https://code.qt.io/pyside/pyside-setup.git
-        #cd pyside-setup
-        #git checkout v6.9.0
-
-        #python setup.py build
-        #python setup.py install
-
-    - name: Build and install KDE syntax highlighting for Qt6
-      shell: bash
-      run: |
-        export PATH=$QT_DIR/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
-        source ~/qt6env/bin/activate
-
-        # Clone the ECM repository and build & install it
-        git clone --depth 1 --branch v6.23.0 https://invent.kde.org/frameworks/extra-cmake-modules.git
-        cd extra-cmake-modules
-        cmake -B build -DCMAKE_PREFIX_PATH=$QT_DIR
-        cmake --build build
-        sudo cmake --install build
-
-        # Clone Syntax Highlighting repository and build & install it
-        git clone --depth 1 --branch v6.23.0 https://invent.kde.org/frameworks/syntax-highlighting.git
-        cd syntax-highlighting
-        cmake -B build -DCMAKE_PREFIX_PATH=$QT_DIR
-        cmake --build build
-        sudo cmake --install build
-
     - name: Configure & build Cutter
       shell: bash
       run: |
-        export PATH=$QT_DIR/bin:$PATH
-        export LD_LIBRARY_PATH=$QT_DIR/lib:$LD_LIBRARY_PATH
-        export Qt6_DIR=$QT_DIR
-        export CMAKE_PREFIX_PATH=$QT_DIR
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
 
-        source ~/qt6env/bin/activate
-        
         cmake -B build -G Ninja \
-          -DPython3_EXECUTABLE=$(which python) \
-          -DPython3_FIND_STRATEGY=LOCATION \
-          -DCMAKE_PREFIX_PATH=$QT_DIR:$VIRTUAL_ENV/lib/python3.13/site-packages/PySide6:$VIRTUAL_ENV/lib/python3.13/site-packages/Shiboken6 \
           -DCMAKE_BUILD_TYPE=Release \
           -DCUTTER_QT=6 \
           -DCUTTER_USE_BUNDLED_RIZIN=ON \
-          -DCUTTER_ENABLE_PYTHON=OFF \
-          -DCUTTER_ENABLE_PYTHON_BINDINGS=OFF \
+          -DCUTTER_ENABLE_PYTHON=ON \
+          -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
           -DCUTTER_ENABLE_GRAPHVIZ=ON \
+          -DCUTTER_ENABLE_KSYNTAXHIGHLIGHTING=ON \
           -DCUTTER_ENABLE_SIGDB=ON \
           -DCUTTER_ENABLE_PACKAGING=ON \
           -DCUTTER_ENABLE_DEPENDENCY_DOWNLOADS=ON \
@@ -201,19 +146,6 @@ jobs:
         export LD_LIBRARY_PATH=${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
-
-        source ~/qt6env/bin/activate
-
-        # Install system-wide Qt6 to fix clack error
-        sudo apt update
-        sudo apt install -y \
-          qt6-base-dev \
-          qt6-base-dev-tools \
-          qt6-declarative-dev \
-          qt6-declarative-dev-tools \
-          qt6-tools-dev \
-          qt6-tools-dev-tools \
-          libqt6core5compat6
         
         cd build
 
