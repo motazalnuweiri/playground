@@ -1,0 +1,35 @@
+name: Test Ubuntu 25.10 ARM64 Container
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-26.04-arm
+
+    container:
+      image: ubuntu:25.10
+
+    steps:
+      - name: Show environment
+        shell: bash
+        run: |
+          set -eux
+
+          echo "=== OS ==="
+          cat /etc/os-release
+
+          echo "=== Architecture ==="
+          uname -m
+          dpkg --print-architecture
+
+          echo "=== Python ==="
+          apt-get update
+          apt-get install -y python3
+          python3 --version
+
+          echo "=== Qt ==="
+          apt-cache policy qt6-base-dev || true
+
+          echo "=== Runner ==="
+          echo "Host/container test successful"
