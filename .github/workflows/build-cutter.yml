@@ -85,7 +85,10 @@ jobs:
           libpcre2-dev \
           libfuse2 \
           meson \
-          libxerces-c-dev
+          libxerces-c-dev \
+          clang \
+          llvm \
+          libclang-dev
 
         # Install Python 3
         apt-get install -y \
