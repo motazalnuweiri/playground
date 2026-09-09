@@ -61,21 +61,6 @@ jobs:
           -e '0,/<height>410<\/height>/s//<height>310<\/height>/' \
           -e 's/QLayout::SetMinimumSize/QLayout::SetDefaultConstraint/' \
           src/dialogs/InitialOptionsDialog.ui
-
-    - name: Verify container and modified source
-      shell: bash
-      run: |
-        echo "=== Container ==="
-        cat /etc/os-release
-        echo
-        echo "=== Workspace ==="
-        pwd
-        echo
-        echo "=== UI ==="
-        grep -n -E '<height>424</height>|<height>310</height>|SetDefaultConstraint' \
-          src/dialogs/InitialOptionsDialog.ui
-
-        exit 1
     
     - name: Install build dependencies
       run: |
