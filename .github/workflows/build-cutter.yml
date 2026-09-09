@@ -1,7 +1,7 @@
 name: Build Cutter (Qt6)
 
 env:
-  TAG: "v2.5.0"
+  TAG: "v2.4.1"
 
 on:
   workflow_dispatch:
