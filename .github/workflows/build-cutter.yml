@@ -28,6 +28,14 @@ jobs:
         ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
         echo $TZ > /etc/timezone
 
+    - name: Install bootstrap dependencies
+      shell: bash
+      run: |
+        apt-get update
+        apt-get install -y \
+          git \
+          ca-certificates
+
     - name: Clone cutter repository (stable branch)
       run: |
         git clone --depth 1 --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
