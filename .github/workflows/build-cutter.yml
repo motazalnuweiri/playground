@@ -56,12 +56,17 @@ jobs:
     - name: Fix file options dialog height
       shell: bash
       run: |
+        # We used 'diff -e basefile changedfile > patch.txt'
+        # than we create 'sed' commands base on patch.txt
         sed -i \
-          -e '0,/<height>524<\/height>/s//<height>424<\/height>/' \
-          -e '0,/<height>410<\/height>/s//<height>310<\/height>/' \
-          -e 's/QLayout::SetMinimumSize/QLayout::SetDefaultConstraint/' \
+          -e '10c\    <height>684</height>' \
+          -e '14c\   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">' \
+          -e '22c\    <height>500</height>' \
+          -e '119c\      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">' \
+          -e '421c\           <height>310</height>' \
+          -e '473c\                <enum>QLayout::SetDefaultConstraint</enum>' \
           src/dialogs/InitialOptionsDialog.ui
-    
+
     - name: Install build dependencies
       run: |
         apt-get update
@@ -181,6 +186,7 @@ jobs:
           -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
           -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
           -DCMAKE_INSTALL_PREFIX=appdir/usr \
+          -DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
           -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
           -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON
 
