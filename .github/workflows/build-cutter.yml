@@ -40,6 +40,9 @@ jobs:
       run: |
         git clone --depth 1 --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
 
+        git config --global --add safe.directory "$(pwd)"
+        git config --global --add safe.directory "$(pwd)/rizin"
+
     - name: Fix git subprojects problems
       shell: bash
       run: |
