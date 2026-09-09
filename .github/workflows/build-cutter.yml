@@ -54,13 +54,31 @@ jobs:
         git clean -dxff subprojects/
 
     - name: Fix file options dialog height
-      shell: bash
-      run: |
-        sed -i \
-          -e '0,/<height>524<\/height>/s//<height>424<\/height>/' \
-          -e '0,/<height>410<\/height>/s//<height>310<\/height>/' \
-          -e 's/QLayout::SetMinimumSize/QLayout::SetDefaultConstraint/' \
-          src/dialogs/InitialOptionsDialog.ui
+	  shell: bash
+	  run: |
+	    FILE="src/dialogs/InitialOptionsDialog.ui"
+	
+	    echo "Working directory:"
+	    pwd
+	
+	    echo "Checking file:"
+	    ls -l "$FILE"
+	
+	    echo "Before:"
+	    grep -n -E '<height>524</height>|<height>410</height>|QLayout::SetMinimumSize' "$FILE" || true
+	
+	    sed -i \
+	      -e '0,/<height>524<\/height>/s//<height>424<\/height>/' \
+	      -e '0,/<height>410<\/height>/s//<height>310<\/height>/' \
+	      -e 's/QLayout::SetMinimumSize/QLayout::SetDefaultConstraint/g' \
+	      "$FILE"
+	
+	    echo "After:"
+	    grep -n -E '<height>524</height>|<height>424</height>|<height>410</height>|<height>310</height>|QLayout::SetMinimumSize|QLayout::SetDefaultConstraint' "$FILE"
+	
+	    echo "Git diff:"
+	    git diff -- "$FILE"
+	    exit 1
 
     - name: Install build dependencies
       run: |
