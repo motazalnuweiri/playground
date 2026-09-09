@@ -13,17 +13,25 @@ jobs:
     name: linux-arm64
     runs-on: ubuntu-26.04-arm
 
+    # Run the entire build inside Ubuntu 25.10 ARM64.
+    container:
+      image: ubuntu:25.10
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
+
     steps:
+
     - name: Set timezone
       run: |
         export TZ=UTC
-        sudo ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
-        echo $TZ | sudo tee /etc/timezone
+        ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+        echo $TZ > /etc/timezone
 
     - name: Clone cutter repository (stable branch)
       run: |
         git clone --depth 1 --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
-        
+
     - name: Fix git subprojects problems
       shell: bash
       run: |
@@ -41,35 +49,35 @@ jobs:
           -e '0,/<height>524<\/height>/s//<height>424<\/height>/' \
           -e '0,/<height>410<\/height>/s//<height>310<\/height>/' \
           -e 's/QLayout::SetMinimumSize/QLayout::SetDefaultConstraint/' \
-            src/dialogs/InitialOptionsDialog.ui
+          src/dialogs/InitialOptionsDialog.ui
 
     - name: Install build dependencies
       run: |
-        sudo apt update
+        apt-get update
 
-        # Add python ppa
-        sudo apt install -y software-properties-common
-        sudo apt update
-
-        # Install build tools
-        sudo apt install -y \
+        # Install basic tools
+        apt-get install -y \
           build-essential \
           cmake \
           ninja-build \
           pkg-config \
           dpkg-dev \
           git \
+          curl \
+          ca-certificates \
+          file \
           mesa-common-dev \
           libxkbcommon-x11-dev \
-          curl \
+          libxkbcommon-dev \
+          libx11-dev \
+          libwayland-dev \
           libpcre2-dev \
           libfuse2 \
           meson \
-          libxerces-c-dev \
-          libxkbcommon-dev
+          libxerces-c-dev
 
-        # Install python 3
-        sudo apt install -y \
+        # Install Python 3
+        apt-get install -y \
           python3 \
           python3-dev \
           python3-venv \
@@ -79,7 +87,7 @@ jobs:
           libshiboken6-dev
 
         # Install Qt6
-        sudo apt install -y \
+        apt-get install -y \
           qt6-base-dev \
           qt6-tools-dev \
           qt6-base-dev-tools \
@@ -88,25 +96,53 @@ jobs:
           libqt6svg6-dev \
           libqt6core5compat6-dev \
           qt6-declarative-dev \
-          qml6-module-qtquick-controls \
-          qt6-declarative-dev \
           qt6-declarative-dev-tools \
+          qml6-module-qtquick-controls \
           libqt6core5compat6
 
-        # Install cutter dependencies 
-        sudo apt install -y \
+        # Install cutter dependencies
+        apt-get install -y \
           libgraphviz-dev \
           libkf6syntaxhighlighting-dev
 
-        sudo apt install -y \
+        apt-get install -y \
           libegl1-mesa-dev \
           libgl1-mesa-dev \
           libgles2-mesa-dev \
           libxkbcommon-dev \
           libx11-dev \
           libwayland-dev
-        
-         sudo apt install libwayland-dev
+
+    - name: Show build environment
+      shell: bash
+      run: |
+        echo "=== OS ==="
+        cat /etc/os-release
+
+        echo
+        echo "=== Architecture ==="
+        uname -m
+        dpkg --print-architecture
+
+        echo
+        echo "=== Python ==="
+        python3 --version
+
+        echo
+        echo "=== Qt ==="
+        apt-cache policy qt6-base-dev
+
+        echo
+        echo "=== PySide6 ==="
+        python3 -c "import PySide6; print(PySide6.__version__)"
+
+        echo
+        echo "=== Shiboken6 ==="
+        python3 -c "import shiboken6; print(shiboken6.__version__)"
+
+        echo
+        echo "=== Graphviz ==="
+        apt-cache policy libgraphviz-dev
 
     - name: Configure & build Cutter
       shell: bash
@@ -146,7 +182,7 @@ jobs:
         export LD_LIBRARY_PATH=${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
-        
+
         cd build
 
         cpack -G DEB \
@@ -156,9 +192,30 @@ jobs:
           -D CPACK_DEBIAN_PACKAGE_DESCRIPTION="Cutter is a Qt based GUI for reverse engineering binaries, which makes
          use of the rizin framework. Advanced users are expected to use the
          rizin CLI tools instead, which are much more powerful."
-        
+
         DEB_FILE=$(ls *.deb | head -n1)
+
         echo "DEB_NAME=$DEB_FILE" >> $GITHUB_ENV
+
+        echo
+        echo "=== Generated DEB ==="
+        ls -lh "$DEB_FILE"
+
+    - name: Verify DEB dependencies
+      shell: bash
+      run: |
+        cd build
+
+        echo "=== Package architecture ==="
+        dpkg-deb -f *.deb Architecture
+
+        echo
+        echo "=== Package dependencies ==="
+        dpkg-deb -f *.deb Depends
+
+        echo
+        echo "=== Package information ==="
+        dpkg-deb -I *.deb | head -40
 
     - uses: actions/upload-artifact@v4
       with:
@@ -166,13 +223,10 @@ jobs:
         path: |
           build/*.deb
 
-    - name: Upload release assets
-      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-      uses: actions/upload-release-asset@v1.0.2
+    - name: Upload release asset
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: build/*.deb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.get_release.outputs.upload_url }}
-        asset_path: build/${{ env.PACKAGE_NAME }}
-        asset_name: ${{ env.PACKAGE_NAME }}
-        asset_content_type: ${{ env.UPLOAD_ASSET_TYPE }}
