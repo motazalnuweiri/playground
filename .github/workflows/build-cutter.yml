@@ -135,6 +135,7 @@ jobs:
     - name: Fix bundled Rizin install paths
       shell: bash
       run: |
+        # https://github.com/rizinorg/cutter/commit/97f75a0b067a0f22b22af3df84e8e0e8f46fff97
         python3 - <<'PY'
         from pathlib import Path
     
@@ -240,19 +241,21 @@ jobs:
           -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
           -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
           -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
-          -DCMAKE_INSTALL_PREFIX=appdir/usr \
+          -DCMAKE_INSTALL_PREFIX=/usr \
           -DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
           -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
           -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON
 
         cd build
         ninja
+        
+        export DESTDIR="$PWD/appdir"
         ninja install
 
     - name: Build DEB package
       shell: bash
       run: |
-        APP_PREFIX=`pwd`/appdir/usr
+        APP_PREFIX="$PWD/appdir/usr"
         export PATH=${APP_PREFIX}/bin:$PATH
         export LD_LIBRARY_PATH=${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH
         export LANG=C.UTF-8
