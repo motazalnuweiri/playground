@@ -153,7 +153,7 @@ jobs:
             ),
             (
                 'BUILD_COMMAND "${NINJA}"',
-                'BUILD_COMMAND sh -c "DESTDIR=${RIZIN_INSTALL_DIR} ${NINJA} install"'
+                'BUILD_COMMAND "${NINJA}" && "DESTDIR=${RIZIN_INSTALL_DIR}" "${NINJA}" install'
             ),
             (
                 'INSTALL_COMMAND "${NINJA}" install)',
@@ -224,6 +224,10 @@ jobs:
       run: |
         export LANG=C.UTF-8
         export LC_ALL=C.UTF-8
+
+        # Build rizin first and set up environment for jsdec
+        export PKG_CONFIG_PATH="${PWD}/build/appdir/usr/lib/pkgconfig:${PWD}/build/appdir/usr/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH"
+        export LD_LIBRARY_PATH="${PWD}/build/appdir/usr/lib:${PWD}/build/appdir/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH"
 
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
