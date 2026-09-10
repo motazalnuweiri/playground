@@ -149,7 +149,7 @@ jobs:
             ),
             (
                 'set(MESON_OPTIONS "--prefix=${RIZIN_INSTALL_DIR}" --libdir=lib)',
-                'set(MESON_OPTIONS "--prefix=${CMAKE_INSTALL_PREFIX}" --libdir=lib)'
+                'set(MESON_OPTIONS "--prefix=/usr" --libdir=lib)'
             ),
             (
                 'BUILD_COMMAND "${NINJA}"',
@@ -245,15 +245,13 @@ jobs:
           -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
           -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
           -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
-          -DCMAKE_INSTALL_PREFIX=/usr \
+          -DCMAKE_INSTALL_PREFIX=appdir/usr \
           -DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
           -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
           -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON
 
         cd build
         ninja
-        
-        export DESTDIR="$PWD/appdir"
         ninja install
 
     - name: Build DEB package
