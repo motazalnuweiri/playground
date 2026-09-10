@@ -132,6 +132,61 @@ jobs:
           libx11-dev \
           libwayland-dev
 
+    - name: Fix bundled Rizin install paths
+      shell: bash
+      run: |
+        python3 - <<'PY'
+        from pathlib import Path
+    
+        p = Path("cmake/BundledRizin.cmake")
+        s = p.read_text()
+    
+        replacements = [
+            (
+                'set(MESON_OPTIONS "--prefix=${RIZIN_INSTALL_DIR}" "--bindir=${RIZIN_INSTALL_BINPATH}")',
+                'set(MESON_OPTIONS "--prefix=${CMAKE_INSTALL_PREFIX}" "--bindir=${RIZIN_INSTALL_BINPATH}")'
+            ),
+            (
+                'set(MESON_OPTIONS "--prefix=${RIZIN_INSTALL_DIR}" --libdir=lib)',
+                'set(MESON_OPTIONS "--prefix=${CMAKE_INSTALL_PREFIX}" --libdir=lib)'
+            ),
+            (
+                'BUILD_COMMAND "${NINJA}"',
+                'BUILD_COMMAND "${NINJA}" && "DESTDIR=${RIZIN_INSTALL_DIR}" "${NINJA}" install'
+            ),
+            (
+                'INSTALL_COMMAND "${NINJA}" install)',
+                'INSTALL_COMMAND cmake -E echo "Skipping install step for Rizin-Bundled")'
+            ),
+            (
+                'set(Rizin_INCLUDE_DIRS "${RIZIN_INSTALL_DIR}/include/librz" "${RIZIN_INSTALL_DIR}/include/librz/sdb")',
+                'set(Rizin_INCLUDE_DIRS "${RIZIN_INSTALL_DIR}/${CMAKE_INSTALL_PREFIX}/include/librz" "${RIZIN_INSTALL_DIR}/${CMAKE_INSTALL_PREFIX}/include/librz/sdb")'
+            ),
+            (
+                '$<BUILD_INTERFACE:${RIZIN_INSTALL_DIR}/lib>',
+                '$<BUILD_INTERFACE:${RIZIN_INSTALL_DIR}/${CMAKE_INSTALL_PREFIX}/lib>'
+            ),
+            (
+                'link_directories("${RIZIN_INSTALL_DIR}/lib")',
+                'link_directories("${RIZIN_INSTALL_DIR}/${CMAKE_INSTALL_PREFIX}/lib")'
+            ),
+            (
+                'install(DIRECTORY "${RIZIN_INSTALL_DIR}/" DESTINATION "." USE_SOURCE_PERMISSIONS',
+                'install(DIRECTORY "${RIZIN_INSTALL_DIR}/${CMAKE_INSTALL_PREFIX}/" DESTINATION "." USE_SOURCE_PERMISSIONS'
+            ),
+        ]
+    
+        for old, new in replacements:
+            if old not in s:
+                raise SystemExit(f"Expected text not found:\n{old}")
+            s = s.replace(old, new, 1)
+    
+        p.write_text(s)
+        PY
+    
+        echo "=== BundledRizin.cmake changes ==="
+        git diff -- cmake/BundledRizin.cmake
+
     - name: Show build environment
       shell: bash
       run: |
