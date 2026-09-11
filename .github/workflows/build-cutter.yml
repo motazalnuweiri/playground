@@ -193,7 +193,7 @@ jobs:
     - name: Build Rizin DEB package
       shell: bash
       run: |
-        VERSION=$(./rizin/build/rizin -v | awk 'NR==1 {print $2}')
+        VERSION=$(rizin-appdir/usr/bin/rizin -v | awk 'NR==1 {print $2}')
         ARCH=$(dpkg --print-architecture)
     
         mkdir -p rizin-deb/DEBIAN
@@ -213,6 +213,10 @@ jobs:
         cp -a rizin-appdir/usr rizin-deb/
     
         dpkg-deb --build rizin-deb "rizin_${VERSION}_${ARCH}.deb"
+
+        echo
+        echo "=== Rizin DEB ==="
+        ls -lh rizin_*.deb
 
     - name: Install Rizin DEB package
       shell: bash
