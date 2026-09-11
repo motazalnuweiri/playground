@@ -98,7 +98,10 @@ jobs:
           libxerces-c-dev \
           clang \
           llvm \
-          libclang-dev
+          libclang-dev \
+          debhelper \
+          devscripts \
+          dpkg-dev
 
         # Install Python 3
         apt-get install -y \
@@ -169,11 +172,11 @@ jobs:
       run: |
         set -e
 
-        PKGROOT="$PWD/rizin-deb"
+        PKGROOT="$PWD/debian/rizin"
         STAGE="$PWD/rizin-appdir"
 
-        rm -rf "$PKGROOT" debian
-        mkdir -p "$PKGROOT/DEBIAN" debian
+        rm -rf debian
+        mkdir -p "$PKGROOT/DEBIAN"
 
         # Get Rizin version.
         export LD_LIBRARY_PATH="$STAGE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
@@ -185,80 +188,59 @@ jobs:
         echo "Architecture: ${ARCH}"
 
         echo "RIZIN_VERSION=${VERSION}" >> "$GITHUB_ENV"
-        
+
         unset LD_LIBRARY_PATH
 
-        # Install staged files.
+        # Install staged files into the Debian package tree.
         cp -a "$STAGE/usr" "$PKGROOT/"
 
-        # Generate shlibs metadata.
-        : > "$PKGROOT/DEBIAN/shlibs"
+        # Debian package metadata.
+        mkdir -p debian
 
-        find "$PKGROOT/usr/lib" -type f -name 'librz_*.so.*' -print0 |
-        while IFS= read -r -d '' LIB; do
-          SONAME=$(readelf -d "$LIB" |
-            sed -n 's/.*SONAME.*\[\(.*\)\].*/\1/p' |
-            head -n1)
-
-          if [ -n "$SONAME" ]; then
-            NAME="${SONAME%%.so.*}"
-            ABI="${SONAME#*.so.}"
-            echo "$NAME $ABI rizin (>= $VERSION)" \
-              >> "$PKGROOT/DEBIAN/shlibs"
-          fi
-        done
-
-        sort -u -o \
-          "$PKGROOT/DEBIAN/shlibs" \
-          "$PKGROOT/DEBIAN/shlibs"
-
-        # Minimal control file required by dpkg-shlibdeps.
         cat > debian/control <<EOF
         Source: rizin
-        Package: rizin
-        Architecture: ${ARCH}
-        Depends: \${shlibs:Depends}
-        EOF
-
-        # Calculate dependencies on external system libraries.
-        ELF_FILES=$(find "$PKGROOT/usr" -type f -exec file {} + |
-          awk -F: '$2 ~ /ELF/ {print $1}')
-        
-        SHLIB_DEPS=$(dpkg-shlibdeps \
-          -x rizin \
-          -l "$PKGROOT/usr/lib" \
-          -O \
-          $ELF_FILES |
-          sed 's/^shlibs:Depends=//')
-
-        # Create final package control.
-        cat > "$PKGROOT/DEBIAN/control" <<EOF
-        Package: rizin
-        Version: ${VERSION}
-        Architecture: ${ARCH}
-        Maintainer: RizinOrg <info@rizin.re>
         Section: devel
         Priority: optional
-        Depends: ${SHLIB_DEPS}
-        Installed-Size: $(du -ks "$PKGROOT/usr" | cut -f1)
-        Homepage: https://rizin.re
+        Maintainer: RizinOrg <info@rizin.re>
+        Standards-Version: 4.6.2
+
+        Package: rizin
+        Architecture: any
+        Depends: \${shlibs:Depends}
         Description: UNIX-like reverse engineering framework
          Rizin is a UNIX-like reverse engineering framework and command-line
          toolset.
+        Homepage: https://rizin.re
         EOF
 
-        # Generate md5sums.
-        cd "$PKGROOT"
+        cat > debian/rules <<'EOF'
+        #!/usr/bin/make -f
 
-        find usr -type f -print0 |
-          xargs -0 md5sum > DEBIAN/md5sums
+        %:
+        	dh $@
+        EOF
 
-        # Build DEB.
-        cd "$GITHUB_WORKSPACE"
+        chmod +x debian/rules
 
-        dpkg-deb --build \
-          "$PKGROOT" \
-          "rizin_${VERSION}_${ARCH}.deb"
+        # Tell debhelper that the package contents are already installed.
+        cat > debian/rizin.install <<'EOF'
+        usr/
+        EOF
+
+        # Generate Debian package metadata and build the package.
+        dpkg-buildpackage \
+          -us \
+          -uc \
+          -b \
+          -a"$ARCH"
+
+        # Move the generated package to the workspace root.
+        mv ../rizin_"${VERSION}"_"${ARCH}".deb \
+          "$GITHUB_WORKSPACE/rizin_${VERSION}_${ARCH}.deb"
+
+        # Install Rizin DEB.
+        apt-get install -y \
+          "$GITHUB_WORKSPACE/rizin_${VERSION}_${ARCH}.deb"
 
         apt-get install -y ./rizin_*.deb
 
