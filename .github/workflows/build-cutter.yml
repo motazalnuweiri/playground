@@ -164,7 +164,7 @@ jobs:
         DESTDIR="$GITHUB_WORKSPACE/rizin-appdir" \
           ninja -C build install
 
-    - name: Build Rizin DEB package
+    - name: Package Rizin DEB package
       shell: bash
       run: |
         set -e
@@ -172,10 +172,10 @@ jobs:
         PKGROOT="$PWD/rizin-deb"
         STAGE="$PWD/rizin-appdir"
 
-        rm -rf "$PKGROOT"
-        mkdir -p "$PKGROOT/DEBIAN"
+        rm -rf "$PKGROOT" debian
+        mkdir -p "$PKGROOT/DEBIAN" debian
 
-        # Get Rizin version from the staged binary.
+        # Get Rizin version.
         export LD_LIBRARY_PATH="$STAGE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
         VERSION=$("$STAGE/usr/bin/rizin" -v | awk 'NR==1 {print $2}')
@@ -186,10 +186,10 @@ jobs:
 
         echo "RIZIN_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
-        # Install staged files into the package.
+        # Install staged files.
         cp -a "$STAGE/usr" "$PKGROOT/"
 
-        # Generate shlibs metadata for Rizin's shared libraries.
+        # Generate shlibs metadata.
         : > "$PKGROOT/DEBIAN/shlibs"
 
         find "$PKGROOT/usr/lib" -type f -name 'librz_*.so.*' -print0 |
@@ -210,23 +210,27 @@ jobs:
           "$PKGROOT/DEBIAN/shlibs" \
           "$PKGROOT/DEBIAN/shlibs"
 
-        # Generate runtime dependencies from ELF binaries.
+        # Minimal control file required by dpkg-shlibdeps.
+        cat > debian/control <<EOF
+        Source: rizin
+        Package: rizin
+        Architecture: ${ARCH}
+        Depends: \${shlibs:Depends}
+        EOF
+
+        # Calculate dependencies of Rizin binaries/libraries.
         ELF_FILES=$(find "$PKGROOT/usr" -type f -exec file {} + |
           awk -F: '$2 ~ /ELF/ {print $1}')
 
-        SHLIB_DEPS=""
+        SHLIB_DEPS=$(dpkg-shlibdeps \
+          -x rizin \
+          -S "$PKGROOT" \
+          -l "$PKGROOT/usr/lib" \
+          -O \
+          $ELF_FILES |
+          sed 's/^shlibs:Depends=//')
 
-        if [ -n "$ELF_FILES" ]; then
-          SHLIB_DEPS=$(dpkg-shlibdeps \
-            -x rizin \
-            -S "$PKGROOT" \
-            -l "$PKGROOT/usr/lib" \
-            -O \
-            $ELF_FILES |
-            sed 's/^shlibs:Depends=//')
-        fi
-
-        # Create the Debian control file.
+        # Create final package control.
         cat > "$PKGROOT/DEBIAN/control" <<EOF
         Package: rizin
         Version: ${VERSION}
@@ -242,13 +246,13 @@ jobs:
          toolset.
         EOF
 
-        # Generate md5sums for all installed files.
+        # Generate md5sums.
         cd "$PKGROOT"
 
         find usr -type f -print0 |
           xargs -0 md5sum > DEBIAN/md5sums
 
-        # Build the DEB.
+        # Build DEB.
         cd "$GITHUB_WORKSPACE"
 
         dpkg-deb --build \
