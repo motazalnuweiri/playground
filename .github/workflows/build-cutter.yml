@@ -164,7 +164,7 @@ jobs:
         DESTDIR="$GITHUB_WORKSPACE/rizin-appdir" \
           ninja -C build install
 
-    - name: Package Rizin DEB package
+    - name: Build Rizin DEB package
       shell: bash
       run: |
         set -e
@@ -185,6 +185,8 @@ jobs:
         echo "Architecture: ${ARCH}"
 
         echo "RIZIN_VERSION=${VERSION}" >> "$GITHUB_ENV"
+        
+        unset LD_LIBRARY_PATH
 
         # Install staged files.
         cp -a "$STAGE/usr" "$PKGROOT/"
@@ -218,13 +220,12 @@ jobs:
         Depends: \${shlibs:Depends}
         EOF
 
-        # Calculate dependencies of Rizin binaries/libraries.
+        # Calculate dependencies on external system libraries.
         ELF_FILES=$(find "$PKGROOT/usr" -type f -exec file {} + |
           awk -F: '$2 ~ /ELF/ {print $1}')
-
+        
         SHLIB_DEPS=$(dpkg-shlibdeps \
           -x rizin \
-          -S "$PKGROOT" \
           -l "$PKGROOT/usr/lib" \
           -O \
           $ELF_FILES |
