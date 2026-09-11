@@ -213,6 +213,14 @@ jobs:
         Homepage: https://rizin.re
         EOF
 
+        cat > debian/changelog <<EOF
+        rizin (${VERSION}) unstable; urgency=medium
+        
+          * Build Rizin package.
+        
+         -- RizinOrg <info@rizin.re>  $(date -R)
+        EOF
+
         cat > debian/rules <<'EOF'
         #!/usr/bin/make -f
 
