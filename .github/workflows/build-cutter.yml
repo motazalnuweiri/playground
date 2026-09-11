@@ -236,11 +236,12 @@ jobs:
 
         # Tell debhelper that the package contents are already installed.
         cat > debian/rizin.install <<'EOF'
-        usr/
+        $PKGROOT/usr
         EOF
 
         # Generate Debian package metadata and build the package.
         dpkg-buildpackage \
+          -rfakeroot \
           -us \
           -uc \
           -b \
