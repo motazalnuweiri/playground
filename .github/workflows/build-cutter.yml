@@ -119,18 +119,28 @@ jobs:
           qml6-module-qtquick-controls \
           libqt6core5compat6
 
-        # Install cutter dependencies
+        # Install Cutter dependencies
         apt-get install -y \
           libgraphviz-dev \
-          libkf6syntaxhighlighting-dev
-
-        apt-get install -y \
+          libkf6syntaxhighlighting-dev \
           libegl1-mesa-dev \
           libgl1-mesa-dev \
           libgles2-mesa-dev \
           libxkbcommon-dev \
           libx11-dev \
           libwayland-dev
+
+        # Install Rizin dependencies
+        apt-get install -y \
+          libcapstone-dev \
+          liblz4-dev \
+          liblzma-dev \
+          libmagic-dev \
+          libzip-dev \
+          libxxhash-dev \
+          libssl-dev \
+          libsqlite3-dev \
+          libzstd-dev
 
     - name: Show build environment
       shell: bash
@@ -163,6 +173,64 @@ jobs:
         echo "=== Graphviz ==="
         apt-cache policy libgraphviz-dev
 
+    - name: Build Rizin
+      shell: bash
+      run: |
+        cd rizin
+    
+        meson setup build \
+          --prefix=/usr \
+          --libdir=lib \
+          --buildtype=release
+    
+        ninja -C build
+    
+        rm -rf "$GITHUB_WORKSPACE/rizin-appdir"
+    
+        DESTDIR="$GITHUB_WORKSPACE/rizin-appdir" \
+          ninja -C build install
+
+    - name: Build Rizin DEB package
+      shell: bash
+      run: |
+        VERSION=$(./rizin/build/rizin -v | awk 'NR==1 {print $2}')
+        ARCH=$(dpkg --print-architecture)
+    
+        mkdir -p rizin-deb/DEBIAN
+    
+        cat > rizin-deb/DEBIAN/control <<EOF
+        Package: rizin
+        Version: ${VERSION}
+        Architecture: ${ARCH}
+        Maintainer: RizinOrg <info@rizin.re>
+        Section: devel
+        Priority: optional
+        Description: UNIX-like reverse engineering framework
+         Rizin is a UNIX-like reverse engineering framework and command-line
+         toolset.
+        EOF
+    
+        cp -a rizin-appdir/usr rizin-deb/
+    
+        dpkg-deb --build rizin-deb "rizin_${VERSION}_${ARCH}.deb"
+
+    - name: Install Rizin DEB package
+      shell: bash
+      run: |
+        apt-get install -y ./rizin_*.deb
+
+        echo "=== Installed Rizin ==="
+        rizin -v
+
+        echo
+        echo "=== Rizin pkg-config ==="
+        pkg-config --modversion rz_core
+        pkg-config --variable=prefix rz_core
+
+        echo
+        echo "=== Rizin themes ==="
+        ls -la /usr/share/rizin/cons | head
+
     - name: Configure & build Cutter
       shell: bash
       run: |
@@ -172,7 +240,7 @@ jobs:
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DCUTTER_QT=6 \
-          -DCUTTER_USE_BUNDLED_RIZIN=ON \
+          -DCUTTER_USE_BUNDLED_RIZIN=OFF \
           -DCUTTER_ENABLE_PYTHON=ON \
           -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
           -DCUTTER_ENABLE_GRAPHVIZ=ON \
@@ -185,18 +253,16 @@ jobs:
           -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
           -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
           -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
-          -DCMAKE_INSTALL_PREFIX=/usr \
+          -DCMAKE_INSTALL_PREFIX=appdir/usr \
           -DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
           -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
           -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON
 
         cd build
         ninja
-        
-        export DESTDIR="$PWD/appdir"
         ninja install
 
-    - name: Build DEB package
+    - name: Build Cutter DEB package
       shell: bash
       run: |
         APP_PREFIX="$PWD/appdir/usr"
@@ -208,6 +274,7 @@ jobs:
         cd build
 
         cpack -G DEB \
+          -D CPACK_DEBIAN_PACKAGE_DEPENDS="rizin (>= 0.8.1)" \
           -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
           -D CPACK_DEBIAN_PACKAGE_HOMEPAGE="https://cutter.re" \
           -D CPACK_PACKAGE_DESCRIPTION_SUMMARY="GUI for rizin reverse engineering framework" \
@@ -243,12 +310,15 @@ jobs:
       with:
         name: linux-arm64-artifacts
         path: |
+          rizin_*.deb
           build/*.deb
 
     - name: Upload release asset
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v2
       with:
-        files: build/*.deb
+        files: |
+          rizin_*.deb
+          build/*.deb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
