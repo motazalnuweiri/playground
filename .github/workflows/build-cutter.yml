@@ -221,6 +221,10 @@ jobs:
          -- RizinOrg <info@rizin.re>  $(date -R)
         EOF
 
+        cat > debian/compat <<EOF
+        13
+        EOF
+
         cat > debian/rules <<'EOF'
         #!/usr/bin/make -f
 
