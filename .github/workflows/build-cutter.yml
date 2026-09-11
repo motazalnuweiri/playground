@@ -2,6 +2,7 @@ name: Build Cutter (Qt6)
 
 env:
   TAG: "v2.4.1"
+  RIZIN_TAG: "v0.8.2"
 
 on:
   workflow_dispatch:
@@ -42,6 +43,10 @@ jobs:
 
         git config --global --add safe.directory "$(pwd)"
         git config --global --add safe.directory "$(pwd)/rizin"
+
+        cd rizin
+        git fetch --depth 1 origin tag ${{ env.RIZIN_TAG }}
+        git checkout ${{ env.RIZIN_TAG }}
 
     - name: Fix git subprojects problems
       shell: bash
@@ -142,37 +147,6 @@ jobs:
           libsqlite3-dev \
           libzstd-dev
 
-    - name: Show build environment
-      shell: bash
-      run: |
-        echo "=== OS ==="
-        cat /etc/os-release
-
-        echo
-        echo "=== Architecture ==="
-        uname -m
-        dpkg --print-architecture
-
-        echo
-        echo "=== Python ==="
-        python3 --version
-
-        echo
-        echo "=== Qt ==="
-        apt-cache policy qt6-base-dev
-
-        echo
-        echo "=== PySide6 ==="
-        python3 -c "import PySide6; print(PySide6.__version__)"
-
-        echo
-        echo "=== Shiboken6 ==="
-        python3 -c "import shiboken6; print(shiboken6.__version__)"
-
-        echo
-        echo "=== Graphviz ==="
-        apt-cache policy libgraphviz-dev
-
     - name: Build Rizin
       shell: bash
       run: |
@@ -190,55 +164,98 @@ jobs:
         DESTDIR="$GITHUB_WORKSPACE/rizin-appdir" \
           ninja -C build install
 
-    - name: Package Rizin DEB package
+    - name: Build Rizin DEB package
       shell: bash
       run: |
-        export LD_LIBRARY_PATH="$PWD/rizin-appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    
-        VERSION=$(rizin-appdir/usr/bin/rizin -v | awk 'NR==1 {print $2}')
+        set -e
+
+        PKGROOT="$PWD/rizin-deb"
+        STAGE="$PWD/rizin-appdir"
+
+        rm -rf "$PKGROOT"
+        mkdir -p "$PKGROOT/DEBIAN"
+
+        # Get Rizin version from the staged binary.
+        export LD_LIBRARY_PATH="$STAGE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+        VERSION=$("$STAGE/usr/bin/rizin" -v | awk 'NR==1 {print $2}')
         ARCH=$(dpkg --print-architecture)
-    
+
         echo "Rizin version: ${VERSION}"
         echo "Architecture: ${ARCH}"
-    
-        mkdir -p rizin-deb/DEBIAN
-    
-        cat > rizin-deb/DEBIAN/control <<EOF
+
+        echo "RIZIN_VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+        # Install staged files into the package.
+        cp -a "$STAGE/usr" "$PKGROOT/"
+
+        # Generate shlibs metadata for Rizin's shared libraries.
+        : > "$PKGROOT/DEBIAN/shlibs"
+
+        find "$PKGROOT/usr/lib" -type f -name 'librz_*.so.*' -print0 |
+        while IFS= read -r -d '' LIB; do
+          SONAME=$(readelf -d "$LIB" |
+            sed -n 's/.*SONAME.*\[\(.*\)\].*/\1/p' |
+            head -n1)
+
+          if [ -n "$SONAME" ]; then
+            NAME="${SONAME%%.so.*}"
+            ABI="${SONAME#*.so.}"
+            echo "$NAME $ABI rizin (>= $VERSION)" \
+              >> "$PKGROOT/DEBIAN/shlibs"
+          fi
+        done
+
+        sort -u -o \
+          "$PKGROOT/DEBIAN/shlibs" \
+          "$PKGROOT/DEBIAN/shlibs"
+
+        # Generate runtime dependencies from ELF binaries.
+        ELF_FILES=$(find "$PKGROOT/usr" -type f -exec file {} + |
+          awk -F: '$2 ~ /ELF/ {print $1}')
+
+        SHLIB_DEPS=""
+
+        if [ -n "$ELF_FILES" ]; then
+          SHLIB_DEPS=$(dpkg-shlibdeps \
+            -x rizin \
+            -S "$PKGROOT" \
+            -l "$PKGROOT/usr/lib" \
+            -O \
+            $ELF_FILES |
+            sed 's/^shlibs:Depends=//')
+        fi
+
+        # Create the Debian control file.
+        cat > "$PKGROOT/DEBIAN/control" <<EOF
         Package: rizin
         Version: ${VERSION}
         Architecture: ${ARCH}
         Maintainer: RizinOrg <info@rizin.re>
         Section: devel
         Priority: optional
+        Depends: ${SHLIB_DEPS}
+        Installed-Size: $(du -ks "$PKGROOT/usr" | cut -f1)
+        Homepage: https://rizin.re
         Description: UNIX-like reverse engineering framework
          Rizin is a UNIX-like reverse engineering framework and command-line
          toolset.
         EOF
-    
-        cp -a rizin-appdir/usr rizin-deb/
-    
-        dpkg-deb --build rizin-deb "rizin_${VERSION}_${ARCH}.deb"
-    
-        echo
-        echo "=== Rizin DEB ==="
-        ls -lh rizin_*.deb
 
-    - name: Install Rizin DEB package
-      shell: bash
-      run: |
+        # Generate md5sums for all installed files.
+        cd "$PKGROOT"
+
+        find usr -type f -print0 |
+          xargs -0 md5sum > DEBIAN/md5sums
+
+        # Build the DEB.
+        cd "$GITHUB_WORKSPACE"
+
+        dpkg-deb --build \
+          "$PKGROOT" \
+          "rizin_${VERSION}_${ARCH}.deb"
+
         apt-get install -y ./rizin_*.deb
-
-        echo "=== Installed Rizin ==="
-        rizin -v
-
-        echo
-        echo "=== Rizin pkg-config ==="
-        pkg-config --modversion rz_core
-        pkg-config --variable=prefix rz_core
-
-        echo
-        echo "=== Rizin themes ==="
-        ls -la /usr/share/rizin/cons | head
 
     - name: Configure & build Cutter
       shell: bash
@@ -286,7 +303,7 @@ jobs:
         cd build
 
         cpack -G DEB \
-          -D CPACK_DEBIAN_PACKAGE_DEPENDS="rizin (>= 0.8.1)" \
+          -D CPACK_DEBIAN_PACKAGE_DEPENDS="rizin (>= ${RIZIN_VERSION})" \
           -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
           -D CPACK_DEBIAN_PACKAGE_HOMEPAGE="https://cutter.re" \
           -D CPACK_PACKAGE_DESCRIPTION_SUMMARY="GUI for rizin reverse engineering framework" \
@@ -297,26 +314,6 @@ jobs:
         DEB_FILE=$(ls *.deb | head -n1)
 
         echo "DEB_NAME=$DEB_FILE" >> $GITHUB_ENV
-
-        echo
-        echo "=== Generated DEB ==="
-        ls -lh "$DEB_FILE"
-
-    - name: Verify DEB dependencies
-      shell: bash
-      run: |
-        cd build
-
-        echo "=== Package architecture ==="
-        dpkg-deb -f *.deb Architecture
-
-        echo
-        echo "=== Package dependencies ==="
-        dpkg-deb -f *.deb Depends
-
-        echo
-        echo "=== Package information ==="
-        dpkg-deb -I *.deb | head -40
 
     - uses: actions/upload-artifact@v4
       with:
