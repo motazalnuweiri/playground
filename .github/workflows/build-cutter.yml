@@ -190,11 +190,16 @@ jobs:
         DESTDIR="$GITHUB_WORKSPACE/rizin-appdir" \
           ninja -C build install
 
-    - name: Build Rizin DEB package
+    - name: Package Rizin DEB package
       shell: bash
       run: |
+        export LD_LIBRARY_PATH="$PWD/rizin-appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    
         VERSION=$(rizin-appdir/usr/bin/rizin -v | awk 'NR==1 {print $2}')
         ARCH=$(dpkg --print-architecture)
+    
+        echo "Rizin version: ${VERSION}"
+        echo "Architecture: ${ARCH}"
     
         mkdir -p rizin-deb/DEBIAN
     
@@ -213,7 +218,7 @@ jobs:
         cp -a rizin-appdir/usr rizin-deb/
     
         dpkg-deb --build rizin-deb "rizin_${VERSION}_${ARCH}.deb"
-
+    
         echo
         echo "=== Rizin DEB ==="
         ls -lh rizin_*.deb
