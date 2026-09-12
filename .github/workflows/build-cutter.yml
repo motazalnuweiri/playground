@@ -231,6 +231,9 @@ jobs:
         override_dh_auto_test:
         override_dh_auto_install:
         override_dh_install:
+
+        override_dh_shlibdeps:
+          dh_shlibdeps -v -l/usr/lib
         EOF
 
         chmod +x "$DEBROOT/debian/rules"
@@ -245,7 +248,10 @@ jobs:
           -b \
           -a"$ARCH"
 
-        apt-get install -y ./rizin_*.deb
+        # Move the generated package to the workspace root.
+        mv -n "$DEBROOT/../*.deb" "$GITHUB_WORKSPACE/"
+
+        apt-get install -y "$GITHUB_WORKSPACE/rizin_*.deb"
 
     - name: Configure & build Cutter
       shell: bash
@@ -302,20 +308,19 @@ jobs:
              rizin CLI tools instead, which are much more powerful."
 
         # Move the generated package to the workspace root.
-        mv *.deb "$GITHUB_WORKSPACE/"
+        mv -n *.deb "$GITHUB_WORKSPACE/"
 
     - uses: actions/upload-artifact@v4
       with:
         name: linux-arm64-artifacts
         path: |
-          *.deb
+          $GITHUB_WORKSPACE/*.deb
 
     - name: Upload release asset
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          rizin_*.deb
-          build/*.deb
+          $GITHUB_WORKSPACE/*.deb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
