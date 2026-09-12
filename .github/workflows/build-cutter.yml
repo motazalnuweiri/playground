@@ -249,7 +249,7 @@ jobs:
           -a"$ARCH"
 
         # Move the generated package to the workspace root.
-        mv -n "$DEBROOT/../*.deb" "$GITHUB_WORKSPACE/"
+        mv -n ../*.deb "$GITHUB_WORKSPACE/"
 
         apt-get install -y "$GITHUB_WORKSPACE/rizin_*.deb"
 
