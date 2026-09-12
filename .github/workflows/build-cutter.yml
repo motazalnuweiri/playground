@@ -234,6 +234,9 @@ jobs:
 
         chmod +x "$DEBROOT/debian/rules"
 
+        rm -f "$DEBROOT/debian/compat"
+        export DH_COMPAT=13
+
         # Build the Rizin binary package.
         cd "$DEBROOT"
 
