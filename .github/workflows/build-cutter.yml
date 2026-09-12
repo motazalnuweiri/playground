@@ -172,11 +172,11 @@ jobs:
       run: |
         set -e
 
-        PKGROOT="$PWD/debian/rizin"
-        STAGE="$PWD/rizin-appdir"
+        STAGE="$GITHUB_WORKSPACE/rizin-appdir"
+        DEBROOT="$GITHUB_WORKSPACE/rizin-package"
 
-        rm -rf debian
-        mkdir -p "$PKGROOT/DEBIAN"
+        rm -rf "$DEBROOT"
+        mkdir -p "$DEBROOT/debian/rizin"
 
         # Get Rizin version.
         export LD_LIBRARY_PATH="$STAGE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
@@ -184,20 +184,18 @@ jobs:
         VERSION=$("$STAGE/usr/bin/rizin" -v | awk 'NR==1 {print $2}')
         ARCH=$(dpkg --print-architecture)
 
+        unset LD_LIBRARY_PATH
+
         echo "Rizin version: ${VERSION}"
         echo "Architecture: ${ARCH}"
 
         echo "RIZIN_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
-        unset LD_LIBRARY_PATH
-
-        # Install staged files into the Debian package tree.
-        cp -a "$STAGE/usr" "$PKGROOT/"
+        # Copy the staged Rizin installation.
+        cp -a "$STAGE/usr" "$DEBROOT/"
 
         # Debian package metadata.
-        mkdir -p debian
-
-        cat > debian/control <<EOF
+        cat > "$DEBROOT/debian/control" <<EOF
         Source: rizin
         Section: devel
         Priority: optional
@@ -213,33 +211,32 @@ jobs:
         Homepage: https://rizin.re
         EOF
 
-        cat > debian/changelog <<EOF
+        cat > "$DEBROOT/debian/changelog" <<EOF
         rizin (${VERSION}) unstable; urgency=medium
-        
-          * Build Rizin package.
-        
+
+          * Automated CI build.
+
          -- RizinOrg <info@rizin.re>  $(date -R)
         EOF
 
-        cat > debian/compat <<EOF
-        13
-        EOF
-
-        cat > debian/rules <<'EOF'
+        cat > "$DEBROOT/debian/rules" <<'EOF'
         #!/usr/bin/make -f
 
         %:
-        	dh $@
+        	dh $@ --buildsystem=none
+
+        override_dh_auto_configure:
+        override_dh_auto_build:
+        override_dh_auto_test:
+        override_dh_auto_install:
+        override_dh_install:
         EOF
 
-        chmod +x debian/rules
+        chmod +x "$DEBROOT/debian/rules"
 
-        # Tell debhelper that the package contents are already installed.
-        cat > debian/rizin.install <<'EOF'
-        $PKGROOT/usr
-        EOF
+        # Build the Rizin binary package.
+        cd "$DEBROOT"
 
-        # Generate Debian package metadata and build the package.
         dpkg-buildpackage \
           -rfakeroot \
           -us \
@@ -248,12 +245,7 @@ jobs:
           -a"$ARCH"
 
         # Move the generated package to the workspace root.
-        mv ../rizin_"${VERSION}"_"${ARCH}".deb \
-          "$GITHUB_WORKSPACE/rizin_${VERSION}_${ARCH}.deb"
-
-        # Install Rizin DEB.
-        apt-get install -y \
-          "$GITHUB_WORKSPACE/rizin_${VERSION}_${ARCH}.deb"
+        mv ../*.deb "$GITHUB_WORKSPACE/"
 
         apt-get install -y ./rizin_*.deb
 
@@ -308,19 +300,17 @@ jobs:
           -D CPACK_DEBIAN_PACKAGE_HOMEPAGE="https://cutter.re" \
           -D CPACK_PACKAGE_DESCRIPTION_SUMMARY="GUI for rizin reverse engineering framework" \
           -D CPACK_DEBIAN_PACKAGE_DESCRIPTION="Cutter is a Qt based GUI for reverse engineering binaries, which makes
-         use of the rizin framework. Advanced users are expected to use the
-         rizin CLI tools instead, which are much more powerful."
+             use of the rizin framework. Advanced users are expected to use the
+             rizin CLI tools instead, which are much more powerful."
 
-        DEB_FILE=$(ls *.deb | head -n1)
-
-        echo "DEB_NAME=$DEB_FILE" >> $GITHUB_ENV
+        # Move the generated package to the workspace root.
+        mv *.deb "$GITHUB_WORKSPACE/"
 
     - uses: actions/upload-artifact@v4
       with:
         name: linux-arm64-artifacts
         path: |
-          rizin_*.deb
-          build/*.deb
+          *.deb
 
     - name: Upload release asset
       if: github.event_name == 'release'
