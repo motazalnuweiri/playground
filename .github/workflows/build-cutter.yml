@@ -251,7 +251,7 @@ jobs:
         # Move the generated package to the workspace root.
         mv -n ../*.deb "$GITHUB_WORKSPACE/"
 
-        apt-get install -y "$GITHUB_WORKSPACE/rizin_*.deb"
+        apt-get install -y "$GITHUB_WORKSPACE"/rizin_*.deb
 
     - name: Configure & build Cutter
       shell: bash
