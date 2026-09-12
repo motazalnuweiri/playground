@@ -175,8 +175,7 @@ jobs:
          debhelper-compat (= 13),
          meson,
          ninja-build,
-         pkg-config,
-         libcapstone-dev
+         pkg-config
         Standards-Version: 4.6.2
         Homepage: https://rizin.re
     
@@ -184,9 +183,10 @@ jobs:
         Architecture: any
         Depends: \${shlibs:Depends},
                  \${misc:Depends}
-        Description: UNIX-like reverse engineering framework
-         Rizin is a UNIX-like reverse engineering framework and command-line
-         toolset.
+        Description: Free and Open Source Reverse Engineering Framework
+         Rizin is a free and open-source Reverse Engineering framework, providing a
+         complete binary analysis experience with features like Disassembler,
+         Hexadecimal editor, Emulation, Binary inspection, Debugger, and more.
         EOF
     
         cat > debian/changelog <<EOF
@@ -206,8 +206,7 @@ jobs:
         override_dh_auto_configure:
         	dh_auto_configure -- \
         		--buildtype=release \
-        		--wrap-mode=default \
-        		-Duse_sys_capstone=enabled
+        		--wrap-mode=default
 
         override_dh_auto_test:
         EOF
