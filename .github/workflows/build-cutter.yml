@@ -210,8 +210,6 @@ jobs:
         		-Duse_sys_capstone=enabled
 
         override_dh_auto_test:
-    	# Upstream integration tests depend on test fixture paths
-    	# that are not relocatable in the Debian build environment.
         EOF
     
         chmod +x debian/rules
