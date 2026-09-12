@@ -175,7 +175,8 @@ jobs:
          debhelper-compat (= 13),
          meson,
          ninja-build,
-         pkg-config
+         pkg-config,
+         libcapstone-dev
         Standards-Version: 4.6.2
         Homepage: https://rizin.re
     
@@ -205,8 +206,7 @@ jobs:
         override_dh_auto_configure:
         	dh_auto_configure -- \
         		--buildtype=release \
-        		--prefix=/usr \
-        		--libdir=lib
+        		-Duse_sys_capstone=true
         EOF
     
         chmod +x debian/rules
