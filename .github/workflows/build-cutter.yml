@@ -201,6 +201,7 @@ jobs:
         Priority: optional
         Maintainer: RizinOrg <info@rizin.re>
         Standards-Version: 4.6.2
+        Build-Depends: debhelper-compat (= 13)
 
         Package: rizin
         Architecture: any
@@ -233,9 +234,6 @@ jobs:
         EOF
 
         chmod +x "$DEBROOT/debian/rules"
-
-        rm -f "$DEBROOT/debian/compat"
-        export DH_COMPAT=13
 
         # Build the Rizin binary package.
         cd "$DEBROOT"
