@@ -230,7 +230,7 @@ jobs:
       with:
         name: rizin-linux-arm64-artifacts
         path: |
-          "$GITHUB_WORKSPACE"/rizin_*.deb
+          rizin_*.deb
 
     - name: Configure & build Cutter
       shell: bash
