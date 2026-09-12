@@ -245,9 +245,6 @@ jobs:
           -b \
           -a"$ARCH"
 
-        # Move the generated package to the workspace root.
-        mv ../*.deb "$GITHUB_WORKSPACE/"
-
         apt-get install -y ./rizin_*.deb
 
     - name: Configure & build Cutter
