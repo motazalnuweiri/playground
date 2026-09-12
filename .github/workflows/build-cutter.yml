@@ -206,6 +206,7 @@ jobs:
         override_dh_auto_configure:
         	dh_auto_configure -- \
         		--buildtype=release \
+        		--wrap-mode=default \
         		-Duse_sys_capstone=enabled
         EOF
     
