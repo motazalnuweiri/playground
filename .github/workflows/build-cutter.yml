@@ -233,7 +233,7 @@ jobs:
         override_dh_install:
 
         override_dh_shlibdeps:
-            dh_shlibdeps -v -l/usr/lib
+        	dh_shlibdeps -v -l/usr/lib
         EOF
 
         chmod +x "$DEBROOT/debian/rules"
