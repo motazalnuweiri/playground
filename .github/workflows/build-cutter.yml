@@ -206,7 +206,7 @@ jobs:
         override_dh_auto_configure:
         	dh_auto_configure -- \
         		--buildtype=release \
-        		-Duse_sys_capstone=true
+        		-Duse_sys_capstone=enabled
         EOF
     
         chmod +x debian/rules
