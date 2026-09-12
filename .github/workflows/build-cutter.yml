@@ -100,6 +100,7 @@ jobs:
           llvm \
           libclang-dev \
           debhelper \
+          debhelper-compat \
           devscripts \
           dpkg-dev
 
@@ -150,108 +151,83 @@ jobs:
           libsqlite3-dev \
           libzstd-dev
 
-    - name: Build Rizin
+    - name: Rizin build, package (DEB) and install
       shell: bash
       run: |
         cd rizin
     
-        meson setup build \
-          --prefix=/usr \
-          --libdir=lib \
-          --buildtype=release
-    
-        ninja -C build
-    
-        rm -rf "$GITHUB_WORKSPACE/rizin-appdir"
-    
-        DESTDIR="$GITHUB_WORKSPACE/rizin-appdir" \
-          ninja -C build install
-
-    - name: Build Rizin DEB package
-      shell: bash
-      run: |
-        set -e
-
-        STAGE="$GITHUB_WORKSPACE/rizin-appdir"
-        DEBROOT="$GITHUB_WORKSPACE/rizin-package"
-
-        rm -rf "$DEBROOT"
-        mkdir -p "$DEBROOT/debian/rizin"
-
-        # Get Rizin version.
-        export LD_LIBRARY_PATH="$STAGE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-
-        VERSION=$("$STAGE/usr/bin/rizin" -v | awk 'NR==1 {print $2}')
+        VERSION=$(git describe --tags --always --dirty | sed 's/^v//')
         ARCH=$(dpkg --print-architecture)
-
-        unset LD_LIBRARY_PATH
-
-        echo "Rizin version: ${VERSION}"
-        echo "Architecture: ${ARCH}"
-
-        echo "RIZIN_VERSION=${VERSION}" >> "$GITHUB_ENV"
-
-        # Copy the staged Rizin installation.
-        cp -a "$STAGE/usr" "$DEBROOT/"
-
-        # Debian package metadata.
-        cat > "$DEBROOT/debian/control" <<EOF
+    
+        echo "Rizin version: $VERSION"
+        echo "Architecture: $ARCH"
+    
+        echo "RIZIN_VERSION=$VERSION" >> "$GITHUB_ENV"
+    
+        mkdir -p debian
+    
+        cat > debian/control <<EOF
         Source: rizin
         Section: devel
         Priority: optional
         Maintainer: RizinOrg <info@rizin.re>
+        Build-Depends:
+         debhelper-compat (= 13),
+         meson,
+         ninja-build,
+         pkg-config
         Standards-Version: 4.6.2
-        Build-Depends: debhelper-compat (= 13)
-
+        Homepage: https://rizin.re
+    
         Package: rizin
         Architecture: any
-        Depends: \${shlibs:Depends}
+        Depends: \${shlibs:Depends},
+                 \${misc:Depends}
         Description: UNIX-like reverse engineering framework
          Rizin is a UNIX-like reverse engineering framework and command-line
          toolset.
-        Homepage: https://rizin.re
         EOF
-
-        cat > "$DEBROOT/debian/changelog" <<EOF
+    
+        cat > debian/changelog <<EOF
         rizin (${VERSION}) unstable; urgency=medium
-
+    
           * Automated CI build.
-
+    
          -- RizinOrg <info@rizin.re>  $(date -R)
         EOF
-
-        cat > "$DEBROOT/debian/rules" <<'EOF'
+    
+        cat > debian/rules <<'EOF'
         #!/usr/bin/make -f
-
+    
         %:
-        	dh $@ --buildsystem=none
+        	dh $@ --buildsystem=meson
 
         override_dh_auto_configure:
-        override_dh_auto_build:
-        override_dh_auto_test:
-        override_dh_auto_install:
-        override_dh_install:
-
-        override_dh_shlibdeps:
-        	dh_shlibdeps -v -l/usr/lib
+        	dh_auto_configure -- \
+        		--buildtype=release \
+        		--prefix=/usr \
+        		--libdir=lib
         EOF
-
-        chmod +x "$DEBROOT/debian/rules"
-
-        # Build the Rizin binary package.
-        cd "$DEBROOT"
-
+    
+        chmod +x debian/rules
+    
         dpkg-buildpackage \
-          -rfakeroot \
           -us \
           -uc \
           -b \
-          -a"$ARCH"
-
+          -a"$(dpkg --print-architecture)"
+    
         # Move the generated package to the workspace root.
-        mv -n ../*.deb "$GITHUB_WORKSPACE/"
+        mv -n ../rizin_*.deb "$GITHUB_WORKSPACE/"
 
         apt-get install -y "$GITHUB_WORKSPACE"/rizin_*.deb
+
+    - name: Upload Rizin DEB
+      uses: actions/upload-artifact@v4
+      with:
+        name: rizin-linux-arm64-artifacts
+        path: |
+          "$GITHUB_WORKSPACE"/rizin_*.deb
 
     - name: Configure & build Cutter
       shell: bash
@@ -307,20 +283,9 @@ jobs:
              use of the rizin framework. Advanced users are expected to use the
              rizin CLI tools instead, which are much more powerful."
 
-        # Move the generated package to the workspace root.
-        mv -n *.deb "$GITHUB_WORKSPACE/"
-
-    - uses: actions/upload-artifact@v4
+    - name: Upload Cutter DEB
+      uses: actions/upload-artifact@v4
       with:
-        name: linux-arm64-artifacts
+        name: cutter-linux-arm64-artifacts
         path: |
-          $GITHUB_WORKSPACE/*.deb
-
-    - name: Upload release asset
-      if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          $GITHUB_WORKSPACE/*.deb
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          build/*.deb
