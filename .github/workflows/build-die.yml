@@ -22,6 +22,20 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
 
     steps:
+      - name: Set timezone
+        run: |
+          export TZ=UTC
+          ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+          echo $TZ > /etc/timezone
+  
+      - name: Install bootstrap dependencies
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y \
+            git \
+            ca-certificates
+      
       - name: Clone DIE repository
         run: |
           git clone --depth 1 --recursive --branch ${{ env.TAG }} https://github.com/horsicq/DIE-engine.git .
