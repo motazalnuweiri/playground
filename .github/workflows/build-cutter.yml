@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-linux-arm64:
-    name: linux-arm64
+    name: Ubuntu arm64
     runs-on: ubuntu-26.04-arm
 
     # Run the entire build inside Ubuntu 25.10 ARM64.
@@ -22,272 +22,273 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
 
     steps:
-
-    - name: Set timezone
-      run: |
-        export TZ=UTC
-        ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
-        echo $TZ > /etc/timezone
-
-    - name: Install bootstrap dependencies
-      shell: bash
-      run: |
-        apt-get update
-        apt-get install -y \
-          git \
-          ca-certificates
-
-    - name: Clone cutter repository (stable branch)
-      run: |
-        git clone --depth 1 --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
-
-        git config --global --add safe.directory "$(pwd)"
-        git config --global --add safe.directory "$(pwd)/rizin"
-
-        cd rizin
-        git fetch --depth 1 origin tag ${{ env.RIZIN_TAG }}
-        git checkout ${{ env.RIZIN_TAG }}
-
-    - name: Fix git subprojects problems
-      shell: bash
-      run: |
-        rm -rf build
-        git submodule foreach --recursive git reset --hard
-        git submodule foreach --recursive git clean -dxff
-
-        cd rizin
-        git clean -dxff subprojects/
-
-    - name: Fix file options dialog height
-      shell: bash
-      run: |
-        # We used 'diff -e basefile changedfile > patch.txt'
-        # than we create 'sed' commands base on patch.txt
-        sed -i \
-          -e '10c\    <height>684</height>' \
-          -e '14c\   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">' \
-          -e '22c\    <height>500</height>' \
-          -e '119c\      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">' \
-          -e '421c\           <height>310</height>' \
-          -e '473c\                <enum>QLayout::SetDefaultConstraint</enum>' \
-          src/dialogs/InitialOptionsDialog.ui
-
-    - name: Install build dependencies
-      run: |
-        apt-get update
-
-        # Install basic tools
-        apt-get install -y \
-          build-essential \
-          cmake \
-          ninja-build \
-          pkg-config \
-          dpkg-dev \
-          git \
-          curl \
-          ca-certificates \
-          file \
-          mesa-common-dev \
-          libxkbcommon-x11-dev \
-          libxkbcommon-dev \
-          libx11-dev \
-          libwayland-dev \
-          libpcre2-dev \
-          libfuse2 \
-          meson \
-          libxerces-c-dev \
-          clang \
-          llvm \
-          libclang-dev \
-          debhelper \
-          debhelper-compat \
-          devscripts \
-          dpkg-dev
-
-        # Install Python 3
-        apt-get install -y \
-          python3 \
-          python3-dev \
-          python3-venv \
-          pyside6-tools \
-          libpyside6-dev \
-          shiboken6 \
-          libshiboken6-dev
-
-        # Install Qt6
-        apt-get install -y \
-          qt6-base-dev \
-          qt6-tools-dev \
-          qt6-base-dev-tools \
-          qt6-tools-dev-tools \
-          qt6-l10n-tools \
-          libqt6svg6-dev \
-          libqt6core5compat6-dev \
-          qt6-declarative-dev \
-          qt6-declarative-dev-tools \
-          qml6-module-qtquick-controls \
-          libqt6core5compat6
-
-        # Install Cutter dependencies
-        apt-get install -y \
-          libgraphviz-dev \
-          libkf6syntaxhighlighting-dev \
-          libegl1-mesa-dev \
-          libgl1-mesa-dev \
-          libgles2-mesa-dev \
-          libxkbcommon-dev \
-          libx11-dev \
-          libwayland-dev
-
-        # Install Rizin dependencies
-        apt-get install -y \
-          libcapstone-dev \
-          liblz4-dev \
-          liblzma-dev \
-          libmagic-dev \
-          libzip-dev \
-          libxxhash-dev \
-          libssl-dev \
-          libsqlite3-dev \
-          libzstd-dev
-
-    - name: Rizin build, package (DEB) and install
-      shell: bash
-      run: |
-        cd rizin
-    
-        VERSION=$(git describe --tags --always --dirty | sed 's/^v//')
-        ARCH=$(dpkg --print-architecture)
-    
-        echo "Rizin version: $VERSION"
-        echo "Architecture: $ARCH"
-    
-        echo "RIZIN_VERSION=$VERSION" >> "$GITHUB_ENV"
-    
-        mkdir -p debian
-    
-        cat > debian/control <<EOF
-        Source: rizin
-        Section: devel
-        Priority: optional
-        Maintainer: RizinOrg <info@rizin.re>
-        Build-Depends:
-         debhelper-compat (= 13),
-         meson,
-         ninja-build,
-         pkg-config
-        Standards-Version: 4.6.2
-        Homepage: https://rizin.re
-    
-        Package: rizin
-        Architecture: any
-        Depends: \${shlibs:Depends},
-                 \${misc:Depends}
-        Description: Free and Open Source Reverse Engineering Framework
-         Rizin is a free and open-source Reverse Engineering framework, providing a
-         complete binary analysis experience with features like Disassembler,
-         Hexadecimal editor, Emulation, Binary inspection, Debugger, and more.
-        EOF
-    
-        cat > debian/changelog <<EOF
-        rizin (${VERSION}) unstable; urgency=medium
-    
-          * Automated CI build.
-    
-         -- RizinOrg <info@rizin.re>  $(date -R)
-        EOF
-    
-        cat > debian/rules <<'EOF'
-        #!/usr/bin/make -f
-    
-        %:
-        	dh $@ --buildsystem=meson
-
-        override_dh_auto_configure:
-        	dh_auto_configure -- \
-        		--buildtype=release \
-        		--wrap-mode=default
-
-        override_dh_auto_test:
-        EOF
-    
-        chmod +x debian/rules
-    
-        dpkg-buildpackage \
-          -us \
-          -uc \
-          -b \
-          -a"$(dpkg --print-architecture)"
-    
-        # Move the generated package to the workspace root.
-        mv -n ../rizin_*.deb "$GITHUB_WORKSPACE/"
-
-        apt-get install -y "$GITHUB_WORKSPACE"/rizin_*.deb
-
-    - name: Upload Rizin DEB
-      uses: actions/upload-artifact@v4
-      with:
-        name: rizin-linux-arm64-artifacts
-        path: |
-          rizin_*.deb
-
-    - name: Configure & build Cutter
-      shell: bash
-      run: |
-        export LANG=C.UTF-8
-        export LC_ALL=C.UTF-8
-
-        # Fix ExternalProject include
-        sed -i '1i include(ExternalProject)' dist/CMakeLists.txt
-
-        cmake -B build -G Ninja \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCUTTER_QT=6 \
-          -DCUTTER_USE_BUNDLED_RIZIN=OFF \
-          -DCUTTER_ENABLE_PYTHON=ON \
-          -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
-          -DCUTTER_ENABLE_GRAPHVIZ=ON \
-          -DCUTTER_ENABLE_KSYNTAXHIGHLIGHTING=ON \
-          -DCUTTER_ENABLE_SIGDB=ON \
-          -DCUTTER_ENABLE_PACKAGING=ON \
-          -DCUTTER_ENABLE_DEPENDENCY_DOWNLOADS=ON \
-          -DCUTTER_PACKAGE_RZ_GHIDRA=ON \
-          -DCUTTER_PACKAGE_JSDEC=ON \
-          -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
-          -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
-          -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
-          -DCMAKE_INSTALL_PREFIX=appdir/usr \
-          -DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
-          -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
-          -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON
-
-        cd build
-        ninja
-        ninja install
-
-    - name: Build Cutter DEB package
-      shell: bash
-      run: |
-        APP_PREFIX="$PWD/appdir/usr"
-        export PATH=${APP_PREFIX}/bin:$PATH
-        export LD_LIBRARY_PATH=${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH
-        export LANG=C.UTF-8
-        export LC_ALL=C.UTF-8
-
-        cd build
-
-        cpack -G DEB \
-          -D CPACK_DEBIAN_PACKAGE_DEPENDS="rizin (>= ${RIZIN_VERSION})" \
-          -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
-          -D CPACK_DEBIAN_PACKAGE_HOMEPAGE="https://cutter.re" \
-          -D CPACK_PACKAGE_DESCRIPTION_SUMMARY="GUI for rizin reverse engineering framework" \
-          -D CPACK_DEBIAN_PACKAGE_DESCRIPTION="Cutter is a Qt based GUI for reverse engineering binaries, which makes
-             use of the rizin framework. Advanced users are expected to use the
-             rizin CLI tools instead, which are much more powerful."
-
-    - name: Upload Cutter DEB
-      uses: actions/upload-artifact@v4
-      with:
-        name: cutter-linux-arm64-artifacts
-        path: |
-          build/*.deb
+      - name: Set timezone
+        run: |
+          export TZ=UTC
+          ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+          echo $TZ > /etc/timezone
+  
+      - name: Install bootstrap dependencies
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y \
+            git \
+            ca-certificates
+  
+      - name: Clone Cutter & Rizin repository
+        run: |
+          git clone --depth 1 --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
+  
+          git config --global --add safe.directory "$(pwd)"
+          git config --global --add safe.directory "$(pwd)/rizin"
+  
+          cd rizin
+          git fetch --depth 1 origin tag ${{ env.RIZIN_TAG }}
+          git checkout ${{ env.RIZIN_TAG }}
+  
+      - name: Fix git subprojects problems
+        shell: bash
+        run: |
+          rm -rf build
+          git submodule foreach --recursive git reset --hard
+          git submodule foreach --recursive git clean -dxff
+  
+          cd rizin
+          git clean -dxff subprojects/
+  
+      - name: Fix file options dialog height
+        shell: bash
+        run: |
+          # We used 'diff -e basefile changedfile > patch.txt'
+          # than we create 'sed' commands base on patch.txt
+          sed -i \
+            -e '10c\    <height>684</height>' \
+            -e '14c\   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">' \
+            -e '22c\    <height>500</height>' \
+            -e '119c\      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">' \
+            -e '421c\           <height>310</height>' \
+            -e '473c\                <enum>QLayout::SetDefaultConstraint</enum>' \
+            src/dialogs/InitialOptionsDialog.ui
+  
+      - name: Install build dependencies
+        run: |
+          apt-get update
+  
+          # Install basic tools
+          apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            dpkg-dev \
+            git \
+            curl \
+            ca-certificates \
+            file \
+            mesa-common-dev \
+            libxkbcommon-x11-dev \
+            libxkbcommon-dev \
+            libx11-dev \
+            libwayland-dev \
+            libpcre2-dev \
+            libfuse2 \
+            meson \
+            libxerces-c-dev \
+            clang \
+            llvm \
+            libclang-dev \
+            debhelper \
+            debhelper-compat \
+            devscripts \
+            dpkg-dev
+  
+          # Install Python 3
+          apt-get install -y \
+            python3 \
+            python3-dev \
+            python3-venv \
+            pyside6-tools \
+            libpyside6-dev \
+            shiboken6 \
+            libshiboken6-dev
+  
+          # Install Qt6
+          apt-get install -y \
+            qt6-base-dev \
+            qt6-tools-dev \
+            qt6-base-dev-tools \
+            qt6-tools-dev-tools \
+            qt6-l10n-tools \
+            libqt6svg6-dev \
+            libqt6core5compat6-dev \
+            qt6-declarative-dev \
+            qt6-declarative-dev-tools \
+            qml6-module-qtquick-controls \
+            libqt6core5compat6
+  
+          # Install Cutter dependencies
+          apt-get install -y \
+            libgraphviz-dev \
+            libkf6syntaxhighlighting-dev \
+            libegl1-mesa-dev \
+            libgl1-mesa-dev \
+            libgles2-mesa-dev \
+            libxkbcommon-dev \
+            libx11-dev \
+            libwayland-dev
+  
+          # Install Rizin dependencies
+          apt-get install -y \
+            libcapstone-dev \
+            liblz4-dev \
+            liblzma-dev \
+            libmagic-dev \
+            libzip-dev \
+            libxxhash-dev \
+            libssl-dev \
+            libsqlite3-dev \
+            libzstd-dev
+  
+      - name: Rizin build, package (DEB) and install
+        shell: bash
+        run: |
+          cd rizin
+      
+          VERSION=$(git describe --tags --always --dirty | sed 's/^v//')
+          ARCH=$(dpkg --print-architecture)
+      
+          echo "Rizin version: $VERSION"
+          echo "Architecture: $ARCH"
+      
+          echo "RIZIN_VERSION=$VERSION" >> "$GITHUB_ENV"
+      
+          mkdir -p debian
+      
+          cat > debian/control <<EOF
+          Source: rizin
+          Section: devel
+          Priority: optional
+          Maintainer: RizinOrg <info@rizin.re>
+          Build-Depends:
+           debhelper-compat (= 13),
+           meson,
+           ninja-build,
+           pkg-config
+          Standards-Version: 4.6.2
+          Homepage: https://rizin.re
+      
+          Package: rizin
+          Architecture: any
+          Depends: \${shlibs:Depends},
+                   \${misc:Depends}
+          Description: Free and Open Source Reverse Engineering Framework
+           Rizin is a free and open-source Reverse Engineering framework, providing a
+           complete binary analysis experience with features like Disassembler,
+           Hexadecimal editor, Emulation, Binary inspection, Debugger, and more.
+          EOF
+      
+          cat > debian/changelog <<EOF
+          rizin (${VERSION}) unstable; urgency=medium
+      
+            * Automated CI build.
+      
+           -- RizinOrg <info@rizin.re>  $(date -R)
+          EOF
+      
+          cat > debian/rules <<'EOF'
+          #!/usr/bin/make -f
+      
+          %:
+          	dh $@ --buildsystem=meson
+  
+          override_dh_auto_configure:
+          	dh_auto_configure -- \
+          		--buildtype=release \
+          		--wrap-mode=default
+  
+          override_dh_auto_test:
+          EOF
+      
+          chmod +x debian/rules
+      
+          dpkg-buildpackage \
+            -us \
+            -uc \
+            -b \
+            -a"$(dpkg --print-architecture)"
+      
+          # Move the generated package to the workspace root.
+          mv -n ../rizin_*.deb "$GITHUB_WORKSPACE/"
+  
+          apt-get install -y "$GITHUB_WORKSPACE"/rizin_*.deb
+  
+      - name: Upload Rizin DEB
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: rizin-linux-arm64-artifacts
+          path: |
+            rizin_*.deb
+  
+      - name: Configure & build Cutter
+        shell: bash
+        run: |
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
+  
+          # Fix ExternalProject include
+          sed -i '1i include(ExternalProject)' dist/CMakeLists.txt
+  
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCUTTER_QT=6 \
+            -DCUTTER_USE_BUNDLED_RIZIN=OFF \
+            -DCUTTER_ENABLE_PYTHON=ON \
+            -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
+            -DCUTTER_ENABLE_GRAPHVIZ=ON \
+            -DCUTTER_ENABLE_KSYNTAXHIGHLIGHTING=ON \
+            -DCUTTER_ENABLE_SIGDB=ON \
+            -DCUTTER_ENABLE_PACKAGING=ON \
+            -DCUTTER_ENABLE_DEPENDENCY_DOWNLOADS=ON \
+            -DCUTTER_PACKAGE_RZ_GHIDRA=ON \
+            -DCUTTER_PACKAGE_JSDEC=ON \
+            -DCUTTER_PACKAGE_RZ_LIBSWIFT=ON \
+            -DCUTTER_PACKAGE_RZ_LIBYARA=ON \
+            -DCUTTER_PACKAGE_RZ_SILHOUETTE=ON \
+            -DCMAKE_INSTALL_PREFIX=appdir/usr \
+            -DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
+            -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
+            -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON
+  
+          cd build
+          ninja
+          ninja install
+  
+      - name: Build Cutter DEB package
+        shell: bash
+        run: |
+          APP_PREFIX="$PWD/appdir/usr"
+          export PATH=${APP_PREFIX}/bin:$PATH
+          export LD_LIBRARY_PATH=${APP_PREFIX}/lib:${APP_PREFIX}/lib/rizin/plugins:$LD_LIBRARY_PATH
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
+  
+          cd build
+  
+          cpack -G DEB \
+            -D CPACK_DEBIAN_PACKAGE_DEPENDS="rizin (>= ${RIZIN_VERSION})" \
+            -D CPACK_PACKAGE_CONTACT="RizinOrg <info@rizin.re>" \
+            -D CPACK_DEBIAN_PACKAGE_HOMEPAGE="https://cutter.re" \
+            -D CPACK_PACKAGE_DESCRIPTION_SUMMARY="GUI for rizin reverse engineering framework" \
+            -D CPACK_DEBIAN_PACKAGE_DESCRIPTION="Cutter is a Qt based GUI for reverse engineering binaries, which makes
+               use of the rizin framework. Advanced users are expected to use the
+               rizin CLI tools instead, which are much more powerful."
+  
+      - name: Upload Cutter DEB
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: cutter-linux-arm64-artifacts
+          path: |
+            build/*.deb
