@@ -54,7 +54,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          qmake6 ../die_source.pro CONFIG+=release
           make -j"$(nproc)"
 
       - name: Build DIE DEB package
