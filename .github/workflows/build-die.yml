@@ -2,19 +2,18 @@ name: Build Detect It Easy (Qt6)
 
 env:
   TAG: "3.21"
-  
+
 on:
   workflow_dispatch:
   release:
     types: [created]
-  
+
 jobs:
 
   ubuntu-arm:
     name: Ubuntu arm64
     runs-on: ubuntu-26.04-arm
 
-    # Run the entire build inside Ubuntu 25.10 ARM64.
     container:
       image: ubuntu:25.10
 
@@ -22,12 +21,6 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
 
     steps:
-      - name: Set timezone
-        run: |
-          export TZ=UTC
-          ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
-          echo $TZ > /etc/timezone
-  
       - name: Install bootstrap dependencies
         shell: bash
         run: |
@@ -38,13 +31,14 @@ jobs:
       
       - name: Clone DIE repository
         run: |
-          git clone --depth 1 --recursive --branch ${{ env.TAG }} https://github.com/horsicq/DIE-engine.git .
-      
+          git clone --depth 1 --recursive \
+            --branch ${{ env.TAG }} \
+            https://github.com/horsicq/DIE-engine.git .
+          
       - name: Install build dependencies
-        shell: bash
         run: |
           apt-get update
-          
+
           apt-get install -y \
             build-essential \
             cmake \
@@ -55,32 +49,81 @@ jobs:
             qt6-5compat-dev \
             libqt6svg6-dev \
             qt6-declarative-dev
-      
-      - name: Patch build scripts
-        run: |
-          sed -i \
-            '/^# Build DEBIAN\/control$/a\
-          DEPS=$(dpkg-shlibdeps -O \
-              "$WORK_DIR/usr/bin/die" \
-              "$WORK_DIR/usr/bin/diec" \
-              "$WORK_DIR/usr/bin/diel" 2>/dev/null | \
-              sed -n '\''s/^shlibs:Depends=//p'\'')' \
-            build_dpkg.sh
-    
-          sed -i \
-            's/^Depends: libqt5core5a.*$/Depends: ${DEPS}/' \
-            build_dpkg.sh
 
-          sed -i 's|/usr/bin/qmake|/usr/bin/qmake6|g' build_tools/linux.sh
-      
+      - name: Build DIE
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j"$(nproc)"
+
       - name: Build DIE DEB package
         run: |
-          bash -x build_dpkg.sh
-    
+          VERSION=$(cat release_version.txt)
+          ARCH=$(dpkg --print-architecture)
+
+          mkdir -p \
+            package/DEBIAN \
+            package/usr/bin \
+            package/usr/lib/die \
+            package/usr/share/applications \
+            package/usr/share/icons \
+            package/usr/share/metainfo
+
+          # Binaries
+          cp build/gui/die package/usr/bin/
+          cp build/console/diec package/usr/bin/
+          cp build/lite/diel package/usr/bin/
+
+          # DIE databases
+          cp -r db package/usr/lib/die/
+          cp -r db_custom package/usr/lib/die/
+
+          # Extra databases, if present
+          if [ -d db_extra ]; then
+            cp -r db_extra package/usr/lib/die/
+          fi
+
+          # Languages
+          if [ -d lang ]; then
+            cp -r lang package/usr/lib/die/
+          fi
+
+          # Generate runtime dependencies
+          DEPS=$(dpkg-shlibdeps -O \
+            package/usr/bin/die \
+            package/usr/bin/diec \
+            package/usr/bin/diel 2>/dev/null |
+            sed -n 's/^shlibs:Depends=//p')
+
+          echo "Dependencies:"
+          echo "$DEPS"
+
+          cat > package/DEBIAN/control <<EOF
+          Package: detectiteasy
+          Version: ${VERSION}
+          Architecture: ${ARCH}
+          Maintainer: hors <horsicq@gmail.com>
+          Homepage: http://ntinfo.biz
+          Section: devel
+          Priority: optional
+          Depends: ${DEPS}
+          Description: Detect It Easy is a program for determining types of files.
+           Detect It Easy is a program for determining types of files.
+          EOF
+
+          dpkg-deb --build \
+            package "die_${VERSION}_ubuntu25.10_${ARCH}.deb"
+
+      - name: Verify DEB package
+        run: |
+          dpkg-deb --info die_*.deb
+          dpkg-deb --contents die_*.deb
+
       - name: Upload DIE DEB
         uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
-          name: die-linux-arm64-artifact
+          name: die-linux-arm64-deb
           path: |
-            release/*.deb
+            *.deb
