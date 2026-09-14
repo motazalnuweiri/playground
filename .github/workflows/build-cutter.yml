@@ -38,7 +38,9 @@ jobs:
   
       - name: Clone Cutter & Rizin repository
         run: |
-          git clone --depth 1 --recursive --branch ${{ env.TAG }} https://github.com/rizinorg/cutter.git .
+          git clone --depth 1 --recursive \
+            --branch ${{ env.TAG }} \
+            https://github.com/rizinorg/cutter.git .
   
           git config --global --add safe.directory "$(pwd)"
           git config --global --add safe.directory "$(pwd)/rizin"
@@ -213,6 +215,7 @@ jobs:
           chmod +x debian/rules
       
           dpkg-buildpackage \
+            -rfakeroot \
             -us \
             -uc \
             -b \
@@ -221,7 +224,8 @@ jobs:
           # Move the generated package to the workspace root.
           mv -n ../rizin_*.deb "$GITHUB_WORKSPACE/"
   
-          apt-get install -y "$GITHUB_WORKSPACE"/rizin_*.deb
+          apt-get install -y \
+            "$GITHUB_WORKSPACE"/rizin_*.deb
   
       - name: Upload Rizin DEB
         uses: actions/upload-artifact@v4
