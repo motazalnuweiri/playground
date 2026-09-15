@@ -52,13 +52,13 @@ jobs:
 
       - name: Build DIE
         run: |
-          cmake -S. -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DUSE_QT6=ON \
-            -DCMAKE_INSTALL_PREFIX=/usr
-
-          cmake --build build -j$(nproc)
-          cmake --install build --prefix package/usr
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel "$(nproc)"
+          
+          rm -rf package
+          mkdir -p package
+          
+          DESTDIR="$PWD/package" cmake --install build --prefix /usr
       
       - name: Build DIE DEB package
         run: |
