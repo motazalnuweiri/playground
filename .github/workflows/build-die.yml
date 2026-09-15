@@ -1,63 +1,133 @@
-name: Build Detect It Easy (Qt5)
+name: Build Detect It Easy (Qt6)
 
 env:
   TAG: "3.21"
-  
+
 on:
   workflow_dispatch:
   release:
     types: [created]
-  
+
 jobs:
 
   ubuntu-arm:
     name: Ubuntu arm64
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
+
+    container:
+      image: ubuntu:25.10
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
 
     steps:
+      - name: Install bootstrap dependencies
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y \
+            git \
+            ca-certificates
+      
       - name: Clone DIE repository
         run: |
           git clone --depth 1 --recursive \
             --branch ${{ env.TAG }} \
             https://github.com/horsicq/DIE-engine.git .
-
-      - name: Install build dependencies
-        shell: bash
-        run: |
-          sudo apt-get update
           
-          sudo apt-get install -y \
-            build-essential \
-            qtbase5-dev \
-            qtscript5-dev \
-            qttools5-dev-tools \
-            libqt5svg5-dev \
-            qtchooser \
-            qt5-qmake
-
-      - name: Patch build scripts
+      - name: Install build dependencies
         run: |
-          sed -i \
-            '/^# Build DEBIAN\/control$/a\
-          DEPS=$(dpkg-shlibdeps -O \
-              "$WORK_DIR/usr/bin/die" \
-              "$WORK_DIR/usr/bin/diec" \
-              "$WORK_DIR/usr/bin/diel" | \
-              sed -n '\''s/^shlibs:Depends=//p'\'')' \
-            build_dpkg.sh
-    
-          sed -i \
-            's/^Depends: .*$/Depends: ${DEPS}/' \
-            build_dpkg.sh
+          apt-get update
 
+          apt-get install -y \
+            build-essential \
+            cmake \
+            dpkg-dev \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-tools-dev-tools \
+            qt6-5compat-dev \
+            libqt6svg6-dev \
+            qt6-declarative-dev
+
+      - name: Build DIE
+        run: |
+          cmake -S. -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DUSE_QT6=ON \
+            -DCMAKE_INSTALL_PREFIX=/usr
+
+          cmake --build build -j$(nproc)
+          cmake --install build --prefix package/usr
+      
       - name: Build DIE DEB package
         run: |
-          bash -x build_dpkg.sh
+          X_SOURCE_PATH=$PWD
+          VERSION=$(cat release_version.txt)
+          ARCH=$(dpkg --print-architecture)
+
+          # Ensure expected paths exist
+          mkdir -p \
+            package/DEBIAN \
+            package/usr/bin \
+            package/usr/lib/die/lang \
+            package/usr/share/applications \
+            package/usr/share/icons \
+            package/usr/share/metainfo
+
+          # Copy assets not covered by cmake install; fold db_extra into db
+          if [ -d "$X_SOURCE_PATH/dep/Detect-It-Easy/db_extra" ]; then
+              mkdir -p "package/usr/lib/die/db"
+              cp -Rf "$X_SOURCE_PATH/dep/Detect-It-Easy/db_extra"/*/ "package/usr/lib/die/db/"
+          fi
+          
+          # lang: cmake installs to prefix/lang; move to usr/lib/die/lang
+          if [ -d "package/usr/lang" ]; then
+              cp -f "package/usr/lang/"*.qm "package/usr/lib/die/lang/" 2>/dev/null || true
+              rm -rf "package/usr/lang"
+          fi
+          
+          # crypto.db
+          if [ -f "$X_SOURCE_PATH/dep/signatures/crypto.db" ]; then
+              mkdir -p "package/usr/lib/die/signatures"
+              cp -f "$X_SOURCE_PATH/dep/signatures/crypto.db" "package/usr/lib/die/signatures/"
+          fi
+
+          # Generate runtime dependencies
+          DEPS=$(dpkg-shlibdeps -O \
+            package/usr/bin/die \
+            package/usr/bin/diec \
+            package/usr/bin/diel |
+            sed -n 's/^shlibs:Depends=//p')
+
+          echo "Dependencies:"
+          echo "$DEPS"
+
+          cat > package/DEBIAN/control <<EOF
+          Package: detectiteasy
+          Version: ${VERSION}
+          Architecture: ${ARCH}
+          Maintainer: hors <horsicq@gmail.com>
+          Homepage: http://ntinfo.biz
+          Section: devel
+          Priority: optional
+          Depends: ${DEPS}
+          Description: Detect It Easy is a program for determining types of files.
+           Detect It Easy is a program for determining types of files.
+          EOF
+
+          dpkg-deb --build \
+            package "die_${VERSION}_ubuntu25.10_${ARCH}.deb"
+
+      - name: Verify DEB package
+        run: |
+          dpkg-deb --info die_*.deb
+          dpkg-deb --contents die_*.deb
 
       - name: Upload DIE DEB
         uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
-          name: die-linux-arm64-artifact
+          name: die-linux-arm64-deb
           path: |
-            release/*.deb
+            *.deb
