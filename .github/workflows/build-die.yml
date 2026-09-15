@@ -52,7 +52,10 @@ jobs:
 
       - name: Build DIE
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build \
+            -DDIE_QT_MAJOR=6 \
+            -DCMAKE_BUILD_TYPE=Release
+          
           cmake --build build --parallel "$(nproc)"
           
           rm -rf package
