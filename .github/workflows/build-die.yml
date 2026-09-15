@@ -32,7 +32,7 @@ jobs:
       - name: Clone DIE repository
         run: |
           git clone --depth 1 --recursive \
-            --branch ${{ env.TAG }} \
+            --branch master \
             https://github.com/horsicq/DIE-engine.git .
           
       - name: Install build dependencies
@@ -52,9 +52,7 @@ jobs:
 
       - name: Build DIE
         run: |
-          cmake -S . -B build \
-            -DDIE_QT_MAJOR=6 \
-            -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           
           cmake --build build --parallel "$(nproc)"
           
